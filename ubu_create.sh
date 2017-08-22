@@ -19,7 +19,7 @@ mount -t ext2 -o loop $CHROOT_IMG $CHROOT_DIR
 
 if [ ! -e $TARBALL ]
 then
-	wget $TARGET_URL
+	curl -O -J $TARGET_URL
 fi
 
 tar --numeric-owner -pxvzf $TARBALL -C $CHROOT_DIR/
