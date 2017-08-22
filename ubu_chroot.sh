@@ -5,7 +5,7 @@ CHROOT_DIR=/.ubuntu
 CHROOT_IMG=ubuntu-17.04-armhf.ext2
 HOST_USER=nemo
 HOME_DIR=/home/$HOST_USER
-ON_DEVICE=0
+export ON_DEVICE=0
 
 if [ -f /etc/sailfish-release ]
 then

@@ -25,6 +25,8 @@ then
 elif [ $1 == "weston" ]
 then
 	apt install -y weston
+	sed -i "s|WAYLAND_DISPLAY=../../run/display/wayland-1|WAYLAND_DISPLAY=../../run/display/wayland-0|" /home/nemo/.bashrc
+	export WAYLAND_DISPLAY=../../run/display/wayland-0
 elif [ $1 == "qxcompositor" ]
 then
     # For dependecies
