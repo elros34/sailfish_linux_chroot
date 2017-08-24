@@ -21,6 +21,8 @@ elif [ $1 == "lxde" ]
 then
 	# lxde, xprop
     apt install lxde-core x11-utils lxterminal -y --no-install-recommends
+    # Disable screensaver
+    rm /etc/xdg/autostart/light-locker.desktop
 
 elif [ $1 == "weston" ]
 then
