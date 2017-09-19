@@ -9,6 +9,7 @@ groupmod -g 100000 nemo
 # Make network connections works if CONFIG_ANDROID_PARANOID_NETWORK is enabled
 groupadd -g 3003 inet
 usermod -aG inet nemo 
+usermod -g inet _apt
 
 su - nemo -c "mkdir -p /home/nemo/.config/ ; #mkdir /home/nemo/.config/pulse"
 
