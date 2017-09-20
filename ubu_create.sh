@@ -1,10 +1,12 @@
 #!/bin/bash
 set -e
 #set -x
+source ubu_variables.sh
 TARGET_URL=http://cdimage.ubuntu.com/ubuntu-base/releases/17.04/release/ubuntu-base-17.04-base-armhf.tar.gz
 CHROOT_IMG=ubuntu-17.04-armhf.ext2
 TARBALL=ubuntu-base-17.04-base-armhf.tar.gz
 CHROOT_DIR=/.ubuntu
+
 
 if [ $(whoami) != "root" ]
 then
@@ -12,7 +14,7 @@ then
     exit 1
 fi
 
-dd if=/dev/zero bs=1M count=3000 of=$CHROOT_IMG
+dd if=/dev/zero bs=1M count=$IMG_SIZE of=$CHROOT_IMG
 mkfs.ext2 $CHROOT_IMG
 mkdir -p $CHROOT_DIR
 mount -t ext2 -o loop $CHROOT_IMG $CHROOT_DIR
@@ -33,6 +35,7 @@ fi
 
 mkdir -p $CHROOT_DIR/usr/share/ubu_chroot/
 cp -f scripts/* $CHROOT_DIR/usr/share/ubu_chroot/
+cp -f ubu_variables.sh $CHROOT_DIR/usr/share/ubu_chroot/
 chmod a+x $CHROOT_DIR/usr/share/ubu_chroot/*
 
 if [ -n "$(mount | grep $CHROOT_DIR/)" ]
@@ -47,6 +50,8 @@ mount --bind /dev/shm $CHROOT_DIR/dev/shm
 mount --bind /proc $CHROOT_DIR/proc
 mount --bind /sys $CHROOT_DIR/sys
 mkdir $CHROOT_DIR/home/host_user
+mkdir $CHROOT_DIR/sfos/
+mkdir $CHROOT_DIR/system/
 
 chroot $CHROOT_DIR /bin/bash /usr/share/ubu_chroot/create.sh
 

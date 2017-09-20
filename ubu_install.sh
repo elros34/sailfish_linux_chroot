@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 #set -x
+source ubu_variables.sh
 CHROOT_DIR=/.ubuntu
 
 if [ $# -eq 0 ]
@@ -17,8 +18,8 @@ fi
 
 if [ $1 == "kwin" ]
 then
-    mkdir -p $CHROOT_DIR/home/nemo/.kde4/share/config/
-    cp -f configs/kwinrc $CHROOT_DIR/home/nemo/.kde4/share/config/
+    mkdir -p $CHROOT_DIR/home/$USER_NAME/.kde4/share/config/
+    cp -f configs/kwinrc $CHROOT_DIR/home/$USER_NAME/.kde4/share/config/
 	
 elif [ $1 == "lxde" ] 
 then
@@ -26,7 +27,7 @@ then
 
 elif [ $1 == "weston" ]
 then
-	cp -f configs/weston.ini $CHROOT_DIR/home/nemo/.config/
+	cp -f configs/weston.ini $CHROOT_DIR/home/$USER_NAME/.config/
 
 elif [ $1 == "qxcompositor" ]
 then

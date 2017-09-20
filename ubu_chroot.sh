@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 #set -x
+source ubu_variables.sh
 CHROOT_DIR=/.ubuntu
 CHROOT_IMG=ubuntu-17.04-armhf.ext2
 HOST_USER=nemo

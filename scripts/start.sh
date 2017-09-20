@@ -4,7 +4,7 @@ set -e
 
 if [ $(whoami) == "root" ]
 then
-    echo "run me as nemo!"
+    echo "Don't run me as root!"
     exit 1
 fi
 
