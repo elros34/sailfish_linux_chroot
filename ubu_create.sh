@@ -14,7 +14,7 @@ then
     exit 1
 fi
 
-dd if=/dev/zero bs=1M count=$IMG_SIZE of=$CHROOT_IMG
+dd if=/dev/zero bs=1 count=1 seek="$IMG_SIZE"M of=$CHROOT_IMG
 mkfs.ext2 $CHROOT_IMG
 mkdir -p $CHROOT_DIR
 mount -t ext2 -o loop $CHROOT_IMG $CHROOT_DIR
