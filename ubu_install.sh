@@ -37,7 +37,9 @@ then
 elif [ $1 == "glibc" ]
 then
     mkdir -p $CHROOT_DIR/glibc
+    mkdir -p $CHROOT_DIR/libhybris
     /bin/cp -r -f glibc/*.deb $CHROOT_DIR/glibc
+    /bin/cp -r -f libhybris/*.deb $CHROOT_DIR/libhybris
 fi
 
 ./ubu_chroot.sh /usr/share/ubu_chroot/install.sh $@

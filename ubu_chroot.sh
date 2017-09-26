@@ -22,7 +22,7 @@ if [ -n "$(mount | grep $CHROOT_DIR)" ]
 then
 	echo "$CHROOT_DIR already mounted"
 	echo "chrooting"
-	chroot $CHROOT_DIR /usr/share/ubu_chroot/chroot.sh /bin/bash $@
+	chroot $CHROOT_DIR /usr/share/ubu_chroot/chroot.sh env -i TERM="$TERM" PATH="$PATH" USER=root HOME=/root /bin/bash $@
 	exit
 fi
 
@@ -62,7 +62,7 @@ mount --bind /tmp $CHROOT_DIR/tmp
 /bin/cp -f /etc/resolv.conf $CHROOT_DIR/etc/
 
 echo "chrooting"
-chroot $CHROOT_DIR /usr/share/ubu_chroot/chroot.sh /bin/bash $@
+chroot $CHROOT_DIR /usr/share/ubu_chroot/chroot.sh env -i TERM="$TERM" PATH="$PATH" USER=root HOME=/root /bin/bash $@
 
 #export QT_IM_MODULE=qtvirtualkeyboard
 
