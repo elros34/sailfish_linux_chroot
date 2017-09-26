@@ -36,11 +36,8 @@ then
 
 elif [ $1 == "glibc" ]
 then
-    tar -xvzf glibc/glibc_2.23.tar.gz -C $CHROOT_DIR/
-    /bin/cp -r -f $CHROOT_DIR/glibc_root/* $CHROOT_DIR/
-    cd $CHROOT_DIR/lib/ 
-    ln -sf arm-linux-gnueabihf/*so.* . #FIXME
-    cd -
+    mkdir -p $CHROOT_DIR/glibc
+    /bin/cp -r -f glibc/*.deb $CHROOT_DIR/glibc
 fi
 
 ./ubu_chroot.sh /usr/share/ubu_chroot/install.sh $@

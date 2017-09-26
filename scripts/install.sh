@@ -53,6 +53,9 @@ then
 elif [ $1 == "glibc" ]
 then
 	echo "libc6 hold" | dpkg --set-selections
+	cd /glibc
+	dpkg -i libc6_2.23*.deb libc6-armel_2.23*.deb libc-bin_2.23*.deb locales_2.23*.deb multiarch-support_2.23*.deb
+	cd -
 
 else
 	echo "supported arguments: kwin, lxde, weston, qxcompositor, glibc"
