@@ -1,0 +1,22 @@
+# Do not edit, copied from sailfish_ubu_chroot
+source /usr/share/ubu_chroot/ubu-variables.sh
+
+# ubu_chroot variables
+export $(dbus-launch)
+trap 'source "$HOME/.bash_logout"' EXIT
+mkdir -p /tmp/runtime-$USER
+export TERM=xterm-256color
+export XDG_RUNTIME_DIR=/tmp/runtime-$USER
+export WAYLAND_DISPLAY=../../run/display/wayland-0
+export EGL_PLATFORM=wayland
+export EGL_DRIVER=egl_gallium
+export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+export QT_QPA_PLATFORM=wayland
+export QT_WAYLAND_FORCE_DPI=96
+#export QT_IM_MODULE=qtvirtualkeyboard
+export DISPLAY=:0
+DISPLAY_RES=$(cat /sys/class/graphics/fb0/modes | grep -Eo '[0-9]+x[0-9]+')
+export DISPLAY_WIDTH=$(echo $DISPLAY_RES | cut -d x -f 1)
+export DISPLAY_HEIGHT=$(echo $DISPLAY_RES | cut -d x -f 2)
+export PS1="[\u@ubu-chroot: \w]# "
+
