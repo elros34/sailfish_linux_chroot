@@ -1,11 +1,16 @@
 #!/bin/bash
 set -e
-#set -x
 source ubu-variables.sh
 source ubu-common.sh
+eval $TRACE_CMD
+
+if [ $(whoami) != "root" ]; then
+    print_info "run me as root!"
+    exit 1
+fi
 
 if [ $# -eq 0 ]; then
-    echo "supported arguments: kwin, lxde, xfce4, weston, qxcompositor, glibc"
+    echo "supported arguments: kwin, lxde, xfce4, weston, qxcompositor, glibc (for 3.0.0 kernel), libhybris, chromium-browser"
 	exit 1
 fi
 
@@ -14,17 +19,31 @@ copy_configs() {
     	mkdir -p $CHROOT_DIR/home/$USER_NAME/.kde4/share/config/
     	cp -f configs/kwinrc $CHROOT_DIR/home/$USER_NAME/.kde4/share/config/	
 	elif [ x$1 == "xlxde" ]; then
-		echo "lxde"
+		echo $1
 	elif [ x$1 == "xxfce4" ]; then
-		echo "xfce4"
+		echo $1
+        sed -i "s!UBU_CHROOT_PATH!$(pwd)!" desktop/ubu-xfce.desktop
+        /bin/cp -f desktop/ubu-xfce.desktop /usr/share/applications/
+        update-desktop-database
 	elif [ x$1 == "xweston" ]; then
 		cp -f configs/weston.ini $CHROOT_DIR/home/$USER_NAME/.config/
 	elif [ x$1 == "xqxcompositor" ]; then
+        if [ $ON_DEVICE -eq 1 ]; then
+            zypper in qxcompositor || print_info "https://build.merproject.org/package/show/home:elros34:sailfishapps/qxcompositor"
+        fi
     	mkdir -p $CHROOT_DIR/usr/local/bin/
     	cp xwayland/Xwayland $CHROOT_DIR/usr/local/bin/
 	elif [ x$1 == "xglibc" ]; then
-   	    mkdir -p $CHROOT_DIR/glibc
-    	/bin/cp -r -f glibc/*.deb $CHROOT_DIR/glibc
+   	    mkdir -p $CHROOT_DIR/debs/glibc
+    	/bin/cp -r -f glibc/*.deb $CHROOT_DIR/debs/glibc/
+	elif [ x$1 == "xlibhybris" ]; then
+   	    mkdir -p $CHROOT_DIR/debs/libhybris
+    	/bin/cp -r -f libhybris/*.deb $CHROOT_DIR/debs/libhybris/
+	elif [ x$1 == "xchromium-browser" ]; then
+   	    echo $1
+        sed -i "s!UBU_CHROOT_PATH!$(pwd)!" desktop/ubu-chromium-browser.desktop
+        /bin/cp -f desktop/ubu-chromium-browser.desktop /usr/share/applications/
+        update-desktop-database
 	fi
 }
 
@@ -42,8 +61,7 @@ elif [ $MOUNTS -gt 0 ]; then
 	exit 1
 fi
 
-mount -t ext2 -o loop $CHROOT_IMG $CHROOT_DIR
-
+ubu_mount_img
 ubu_mount
 copy_configs $1
 ubu_chroot /usr/share/ubu_chroot/install.sh $@

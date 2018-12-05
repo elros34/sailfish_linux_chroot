@@ -1,1 +1,2 @@
-ubuntu-17.04-armhf.ext2
+ubuntu*.tar.gz
+ubuntu*.ext*

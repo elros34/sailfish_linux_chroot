@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Categories=Ubuntu;
+Icon=icon-launcher-shell
+Exec=fingerterm -e 'echo -e "\n=== ubu close ===\n";cd UBU_CHROOT_PATH;devel-su ./ubu-close.sh;exec bash'
+Name=Ubu Close
+# X-Nemo-Single-Instance is ignored by lipstick launcher, patch is needed
+X-Nemo-Single-Instance=no
+Terminal=false
+
