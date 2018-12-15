@@ -29,7 +29,7 @@ chown $USER_NAME:$USER_NAME /home/$USER_NAME/.profile
 
 apt update
 apt upgrade -y
-apt install -y vim dialog locales command-not-found kbd bash-completion sed dbus-x11 apt-file psmisc sudo openssh-server apt-utils unionfs-fuse
+apt install -y vim dialog locales command-not-found kbd bash-completion sed dbus-x11 apt-file psmisc sudo openssh-server apt-utils unionfs-fuse bc
 apt-file update
 usermod -aG sudo $USER_NAME
 dpkg-reconfigure locales

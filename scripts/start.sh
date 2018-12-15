@@ -43,7 +43,9 @@ elif [ x$1 == "xchromium" ] || [ x$1 == "xchromium-browser" ]; then #only for hw
 		sleep 1
 	done
     #matchbox-window-manager -use_titlebar no &
-	chromium-browser --window-size=$DISPLAY_HEIGHT,$DISPLAY_WIDTH --window-position=0,0 $@
+    H="$(bc <<< $DISPLAY_HEIGHT/$CHROMIUM_SCALE)"
+    W="$(bc <<< $DISPLAY_WIDTH/$CHROMIUM_SCALE)"
+	chromium-browser --force-device-scale-factor=$CHROMIUM_SCALE --window-size=$H,$W --window-position=0,0 $@
     #TODO: onboard --layout=Phone, autoshow/hide for hw keyboard less devices
 else
 	print_info "supported compositors: kwin, weston, qxcompositor"

@@ -51,7 +51,7 @@ elif [ x$1 == "xglibc" ]; then
 	dpkg -i libc6_2.27*.deb libc6-armel_2.27*.deb libc-bin_2.27*.deb locales_2.27*.deb multiarch-support_2.27*.deb
 
 elif [ x$1 == "xlibhybris" ]; then
-    apt install libwayland-client0 libwayland-server0 libgles2
+    apt install -y libwayland-client0 libwayland-server0 libegl1 libgles2
 	cd /debs/libhybris
 	dpkg -i libhybris-common1_*.deb libhybris_0*.deb libhybris-test_*.deb libhybris-utils_*.deb libandroid-properties1_*.deb libhardware2_*.deb libmedia1_*.deb
     update-alternatives --set arm-linux-gnueabihf_egl_conf /usr/lib/arm-linux-gnueabihf/libhybris-egl/ld.so.conf 

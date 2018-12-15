@@ -22,9 +22,13 @@ ubu_chroot() {
 	rsync ubu-variables.sh $CHROOT_DIR/usr/share/ubu_chroot/
 	chmod a+x $CHROOT_DIR/usr/share/ubu_chroot/*
 	rsync scripts/dotuburc $CHROOT_DIR/home/$USER_NAME/.uburc
+    HOSTNAME="$(hostname)"
+    if ! grep -q $HOSTNAME $CHROOT_DIR/etc/hosts ; then
+        echo "127.0.1.1 $HOSTNAME" >> $CHROOT_DIR/etc/hosts
+    fi 
     #ssh-copy-id -o StrictHostKeyChecking=no  -i /home/$HOST_USER/.ssh/id_rsa.pub $USER_NAME@localhost -p 2228
     #TODO remove duplicates
-    if [ ! "$(grep -q "$(cat $HOST_HOME_DIR/.ssh/id_rsa.pub)" $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys)" ]; then
+    if ! grep -q "$(cat $HOST_HOME_DIR/.ssh/id_rsa.pub)" $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys ; then
         cat $HOST_HOME_DIR/.ssh/id_rsa.pub >> $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys
     fi
 	

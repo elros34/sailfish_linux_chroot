@@ -54,7 +54,7 @@ fi
 
 TARBALL=$(basename $TARGET_URL)
 if [ ! -e $TARBALL ] || [ $(du -m $TARBALL | cut -f1) -lt 20 ]; then
-	rm $TARBALL || true
+	rm -f $TARBALL
 	curl -O -J -L $TARGET_URL
 fi
 
@@ -86,7 +86,7 @@ ubu_mount
 ubu_chroot /usr/share/ubu_chroot/create.sh
 # test connection and update known_hosts
 ubu_chroot /usr/share/ubu_chroot/chroot.sh true
-su $HOST_USER -l -c "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost true" 
+su $HOST_USER -l -c "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost true" || true
 ubu_cleanup
 
 sed -i "s!UBU_CHROOT_PATH!$(pwd)!g" desktop/ubu-shell.desktop
