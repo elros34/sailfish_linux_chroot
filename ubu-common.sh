@@ -27,6 +27,11 @@ ubu_chroot() {
         echo "127.0.1.1 $HOSTNAME" >> $CHROOT_DIR/etc/hosts
     fi 
     #ssh-copy-id -o StrictHostKeyChecking=no  -i /home/$HOST_USER/.ssh/id_rsa.pub $USER_NAME@localhost -p 2228
+
+    if [ ! -f "$HOST_HOME_DIR/.ssh/id_rsa.pub" ]; then
+        su $HOST_USER -l -c "ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa"
+    fi
+
     #TODO remove duplicates
     if ! grep -q "$(cat $HOST_HOME_DIR/.ssh/id_rsa.pub)" $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys ; then
         cat $HOST_HOME_DIR/.ssh/id_rsa.pub >> $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys
@@ -116,10 +121,13 @@ ubu_cleanup() {
 		ubu_umount
         CNT="$(fuser -v $CHROOT_DIR 2>/dev/null | wc -w)"
 		if [ $CNT -gt 0 ]; then
+            sfossdk_cleanup_procs
 		    print_info "$CHROT_DIR busy!\nDo you want to force unmount (y/N)?"
 		    read yn
 		    if [ x$yn == "xy" ]; then
 		        ubu_umount force
+            else
+                ubu_umount
 	        fi
         fi
 	else

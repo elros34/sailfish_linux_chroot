@@ -50,5 +50,4 @@ chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/.ssh/
 
 apt clean
 
-print_info "Image created. Now you can run ubu-install.sh"
 

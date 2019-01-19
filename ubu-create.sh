@@ -56,6 +56,7 @@ TARBALL=$(basename $TARGET_URL)
 if [ ! -e $TARBALL ] || [ $(du -m $TARBALL | cut -f1) -lt 20 ]; then
 	rm -f $TARBALL
 	curl -O -J -L $TARGET_URL
+    chown $HOST_USER:$HOST_USER $TARBALL
 fi
 
 print_info "Extracting..."
@@ -63,7 +64,7 @@ tar --numeric-owner -pxzf $TARBALL -C $CHROOT_DIR/
 
 ARCH=$(uname -m)
 if [[ $ARCH == "x86"* ]]; then
-	apt-get install qemu-user-static || zypper install qemu-user-static
+	pkcon install qemu-user-static
 	cp /usr/bin/qemu-arm-static $CHROOT_DIR/usr/bin/
 fi
 
@@ -89,11 +90,13 @@ ubu_chroot /usr/share/ubu_chroot/chroot.sh true
 su $HOST_USER -l -c "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost true" || true
 ubu_cleanup
 
-sed -i "s!UBU_CHROOT_PATH!$(pwd)!g" desktop/ubu-shell.desktop
-sed -i "s!UBU_CHROOT_PATH!$(pwd)!g" desktop/ubu-close.desktop
-/bin/cp -f desktop/ubu-shell.desktop /usr/share/applications/
-/bin/cp -f desktop/ubu-close.desktop /usr/share/applications/
-update-desktop-database
-  
+if [ x$ON_DEVICE == x"1" ]; then
+    sed -i "s!UBU_CHROOT_PATH!$(pwd)!g" desktop/ubu-shell.desktop
+    sed -i "s!UBU_CHROOT_PATH!$(pwd)!g" desktop/ubu-close.desktop
+    /bin/cp -f desktop/ubu-shell.desktop /usr/share/applications/
+    /bin/cp -f desktop/ubu-close.desktop /usr/share/applications/
+    update-desktop-database
+fi
 
+print_info "Image created. Now you can run ubu-install.sh"
 
