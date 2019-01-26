@@ -52,15 +52,12 @@ ubu_mount() {
 	mount --bind /dev/pts $CHROOT_DIR/dev/pts
 	mount --bind /dev/shm $CHROOT_DIR/dev/shm
 	mount --bind /sys $CHROOT_DIR/sys
-	mount --bind /proc $CHROOT_DIR/proc
-    #mkdir -p $CHROOT_DIR/run/user/100000/
-    #cp -rf /run/user/100000/dbus/ $CHROOT_DIR/run/user/100000/
-    #cp -rf /run/user/100000/pulse/ $CHROOT_DIR/run/user/100000/
-	#mount --bind /run $CHROOT_DIR/run #
+    mount --bind /proc $CHROOT_DIR/proc
     mount --rbind --make-rslave --read-only / $CHROOT_DIR/parentroot
 	mount --rbind --make-rslave $HOST_HOME_DIR $CHROOT_DIR/home/host-user
+    mount --bind /tmp $CHROOT_DIR/tmp
 	
-	if [ x$ON_DEVICE == "x1" ]; then
+    if [ x$ON_DEVICE == x"1" ]; then
         # wayland
         mount --bind /run/display $CHROOT_DIR/run/display
 
@@ -68,18 +65,21 @@ ubu_mount() {
     	mount --bind --make-slave --read-only /system $CHROOT_DIR/parentroot/system
 	
     	# hw keyboard, TODO: layout
-        if [ -f $CHROOT_DIR/usr/share/X11/xkb ]; then
-    	    mount -o bind,ro /usr/share/X11/xkb $CHROOT_DIR/usr/share/X11/xkb || true
+        if [ -d $CHROOT_DIR/usr/share/X11/xkb ]; then
+            mount -o bind,ro /usr/share/X11/xkb $CHROOT_DIR/usr/share/X11/xkb
         fi
-        
+
+        # audio muted by default
+        if [ x$ENABLE_AUDIO == x"1" ] && [ -d $CHROOT_DIR/tmp/runtime-$USER_NAME ]; then
+            mkdir -p $CHROOT_DIR/tmp/runtime-$USER_NAME/pulse
+            mount --bind /run/user/100000/pulse $CHROOT_DIR/tmp/runtime-$USER_NAME/pulse
+            mount --bind /var/lib/dbus $CHROOT_DIR/var/lib/dbus
+            if [ -d $CHROOT_DIR/home/$USER_NAME/.config/pulse ]; then
+               mount -o bind,ro /home/$HOST_USER/.config/pulse $CHROOT_DIR/home/$USER_NAME/.config/pulse
+            fi
+        fi
         mount --rbind --make-slave /run/media/$HOST_USER $CHROOT_DIR/media/sdcard
-    	
-    	#mount --bind /var/lib/dbus $CHROOT_DIR/var/lib/dbus #
-    	#mount --bind /var/run/dbus $CHROOT_DIR/var/run/dbus
-    	#mount -o bind,ro /home/$HOST_USER/.config/pulse $CHROOT_DIR/home/$USER_NAME/.config/pulse
-	fi
-	
-	mount --bind /tmp $CHROOT_DIR/tmp #
+    fi
 	rsync ubu-variables.sh $CHROOT_DIR/usr/share/ubu_chroot/
 }
 
@@ -103,7 +103,7 @@ ubu_umount() {
 	umount -R $CHROOT_DIR || true
 	for dir in $(mount | grep $CHROOT_DIR | cut -f 3 -d" " | sort -r); do
 		print_info "unmounting $dir"
-		if [ x$1 == "xforce" ]; then
+        if [ x$1 == x"force" ]; then
 			umount -flR $CHROOT_DIR || true
 		else
 			umount -R $dir || true
@@ -116,7 +116,7 @@ ubu_umount() {
 ubu_cleanup() {
     print_info "Active processes: "
     fuser -v $CHROOT_DIR 2>&1 | grep -ve USER -ve '^&' || true
-	if [ x$1 == "xforce" ]; then
+    if [ x$1 == x"force" ]; then
         ubu_cleanup_procs
 		ubu_umount
         CNT="$(fuser -v $CHROOT_DIR 2>/dev/null | wc -w)"
@@ -134,11 +134,11 @@ ubu_cleanup() {
         # unmount only if nothing was started by the user
         CNT="$(fuser -v $CHROOT_DIR 2>/dev/null | wc -w)"
         if [ $CNT -gt 1 ]; then
-            # mount, unionfs, dbus-daemon (dbus-launch), sshd, systemd-logind ?
+            # mount, unionfs, #dbus-daemon (dbus-launch), sshd, systemd-logind ?
             RES="$(fuser -v $CHROOT_DIR 2>&1 || true)"
-            if [ $CNT -eq 5 ] && [ -n "$(echo $RES | grep 'unionfs.*systemd-logind')" ] || \
-               [ $CNT -eq 4 ] && [ -n "$(echo $RES | grep unionfs)" ] || \
-               [ $CNT -le 3 ]; then
+            if [ $CNT -eq 4 ] && [ -n "$(echo $RES | grep 'unionfs.*systemd-logind')" ] || \
+               [ $CNT -eq 3 ] && [ -n "$(echo $RES | grep unionfs)" ] || \
+               [ $CNT -le 2 ]; then
                 ubu_cleanup_procs
 		        ubu_umount
             else
@@ -163,4 +163,7 @@ ubu_ssh_pid() {
     pgrep -u root -x -f '/usr/sbin/sshd -p 2228'
 }
 
-
+uburc_sed() {
+    sed -i $1 scripts/dotuburc
+    sed -i $1 $CHROOT_DIR/home/$USER_NAME/.uburc
+}

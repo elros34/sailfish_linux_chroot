@@ -11,8 +11,6 @@ fi
 
 if [ x$1 == "xkwin" ]; then
     chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/.kde4/
-    sed -i "s|WAYLAND_DISPLAY=../../run/display/wayland-1|WAYLAND_DISPLAY=../../run/display/wayland-0|" /home/$USER_NAME/.bashrc
-    
 	# xhost, kwin
 	# plasma-active-default-settings: provide kdeglobals needed by kwin_wayland. Without kdeglobals file kwin is unusable slow
 	apt install x11-xserver-utils kwin-wayland xwayland kwin-wayland-backend-wayland kwin-wayland-backend-x11  -y --no-install-recommends
@@ -32,17 +30,13 @@ elif [ x$1 == "xxfce4" ]; then
     echo "Select Default-hdpi theme in 'Settings Manager/Window Manager/Style/Theme'"
     echo -e "Disable compositing in 'Settings Manager/Window Manager Tweaks/Compositor'\n"
 elif [ x$1 == "xweston" ]; then
-	apt install -y weston
-	sed -i "s|WAYLAND_DISPLAY=../../run/display/wayland-1|WAYLAND_DISPLAY=../../run/display/wayland-0|" /home/$USER_NAME/.bashrc
-	export WAYLAND_DISPLAY=../../run/display/wayland-0
+    apt install -y weston
 elif [ x$1 == "xqxcompositor" ]; then
     # For dependecies
     apt install -y xwayland
     mkdir -p /usr/local/share/X11/xkb/rules
     ln -fs /usr/share/X11/xkb/rules/evdev /usr/local/share/X11/xkb/rules/
     ln -fs /usr/bin/xkbcomp /usr/local/bin/
-	sed -i "s|WAYLAND_DISPLAY=../../run/display/wayland-0|WAYLAND_DISPLAY=../../run/display/wayland-1|" /home/$USER_NAME/.bashrc
-	export WAYLAND_DISPLAY=../../run/display/wayland-1
 
 elif [ x$1 == "xglibc" ]; then
 	echo "libc6 hold" | dpkg --set-selections

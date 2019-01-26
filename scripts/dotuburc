@@ -4,11 +4,9 @@ source /usr/share/ubu_chroot/ubu-variables.sh
 # ubu_chroot variables
 export $(dbus-launch)
 trap 'source "$HOME/.bash_logout"' EXIT
-mkdir -p /tmp/runtime-$USER
-chmod 700 /tmp/runtime-$USER
 export TERM=xterm-256color
 export XDG_RUNTIME_DIR=/tmp/runtime-$USER
-export WAYLAND_DISPLAY=../../run/display/wayland-0
+export WAYLAND_DISPLAY=../../run/display/wayland-ubu-1
 export EGL_PLATFORM=wayland
 export EGL_DRIVER=egl_gallium
 export QT_WAYLAND_DISABLE_WINDOWDECORATION=1

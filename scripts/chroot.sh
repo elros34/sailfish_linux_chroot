@@ -5,9 +5,9 @@ source /root/.bashrc
 source /usr/share/ubu_chroot/ubu-variables.sh
 eval $TRACE_CMD
 
-if [ ! -f /run/dbus/pid ]; then
-    dbus-daemon --system --fork
-fi
+#if [ ! -f /run/dbus/pid ]; then
+    #dbus-daemon --system --fork
+#fi
 
 if [ ! -f /run/sshd.pid ]; then
     /usr/sbin/sshd -p 2228

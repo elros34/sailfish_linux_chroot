@@ -18,30 +18,35 @@ if [ $# -eq 0 ];then
 	exit 1
 fi
 
+start_xwayland() {
+    export WAYLAND_DISPLAY=../../run/display/wayland-ubu-1
+    if [ -f /tmp/.X0-lock ]; then
+        print_info "Xwayland already running"
+    else
+        Xwayland -nolisten tcp &
+        i=20
+        while [ $i -gt 0 ]; do
+            if [ -f /tmp/.X0-lock ]; then
+                break
+            fi
+            sleep 1
+            ((i--))
+        done
+    fi
+}
+
 if [ x$1 == "xkwin" ]; then
 	kwin_wayland --width $DISPLAY_WIDTH --height $DISPLAY_HEIGHT --xwayland &
 elif [ x$1 == "xweston" ]; then
 	weston
 elif [ x$1 == "xxfce4" ] || [ x$1 == "xxfce" ]; then
-	export WAYLAND_DISPLAY=../../run/display/wayland-1
-	Xwayland -nolisten tcp &
-	while [ ! -f /tmp/.X0-lock ]; do
-		sleep 1
-	done
+    start_xwayland
 	startxfce4
 elif [ x$1 == "xqxcompositor" ]; then
-	export WAYLAND_DISPLAY=../../run/display/wayland-1
-	Xwayland -nolisten tcp &
-	while [ ! -f /tmp/.X0-lock ]; do
-		sleep 1
-	done
+    start_xwayland
 elif [ x$1 == "xchromium" ] || [ x$1 == "xchromium-browser" ]; then #only for hw keyboard devices
     shift
-	export WAYLAND_DISPLAY=../../run/display/wayland-1
-	Xwayland -nolisten tcp &
-	while [ ! -f /tmp/.X0-lock ]; do
-		sleep 1
-	done
+    start_xwayland
     #matchbox-window-manager -use_titlebar no &
     H="$(bc <<< $DISPLAY_HEIGHT/$CHROMIUM_SCALE)"
     W="$(bc <<< $DISPLAY_WIDTH/$CHROMIUM_SCALE)"

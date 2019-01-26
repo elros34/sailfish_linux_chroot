@@ -8,6 +8,7 @@ export USER_NAME=user
 export CHROOT_DIR=/.ubuntu
 export HOST_USER=nemo
 export HOST_HOME_DIR=/home/$HOST_USER
+export ENABLE_AUDIO=0 # don't use
 
 print_info() {
     echo -e "\n=== $1 ===\n"

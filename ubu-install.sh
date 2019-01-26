@@ -18,6 +18,7 @@ copy_configs() {
 	if [ x$1 == "xkwin" ]; then
     	mkdir -p $CHROOT_DIR/home/$USER_NAME/.kde4/share/config/
     	cp -f configs/kwinrc $CHROOT_DIR/home/$USER_NAME/.kde4/share/config/	
+        uburc_sed "s|display/wayland-ubu-1|display/wayland-0|"
 	elif [ x$1 == "xlxde" ]; then
 		echo $1
 	elif [ x$1 == "xxfce4" ]; then
@@ -27,12 +28,15 @@ copy_configs() {
         update-desktop-database
 	elif [ x$1 == "xweston" ]; then
 		cp -f configs/weston.ini $CHROOT_DIR/home/$USER_NAME/.config/
+        uburc_sed "s|display/wayland-ubu-1|display/wayland-0|"
 	elif [ x$1 == "xqxcompositor" ]; then
         if [ $ON_DEVICE -eq 1 ]; then
-            zypper in qxcompositor || print_info "https://build.merproject.org/package/show/home:elros34:sailfishapps/qxcompositor"
+            pkcon install -y qxcompositor || true
+            print_info "https://build.merproject.org/package/show/home:elros34:sailfishapps/qxcompositor"
         fi
     	mkdir -p $CHROOT_DIR/usr/local/bin/
     	cp xwayland/Xwayland $CHROOT_DIR/usr/local/bin/
+        uburc_sed "s|display/wayland-0|display/wayland-ubu-1|"
 	elif [ x$1 == "xglibc" ]; then
    	    mkdir -p $CHROOT_DIR/debs/glibc
     	/bin/cp -r -f glibc/*.deb $CHROOT_DIR/debs/glibc/

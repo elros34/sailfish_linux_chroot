@@ -17,7 +17,7 @@ groupadd -g 3003 inet
 usermod -aG inet $USER_NAME
 usermod -g inet _apt
 
-su $USER_NAME -c "mkdir -p /home/$USER_NAME/.config/"
+su $USER_NAME -c "mkdir -p /home/$USER_NAME/.config/pulse"
 # pgrep --uid 100000 dbus-daemon
 cp /etc/skel/.bashrc /home/$USER_NAME/
 cp /etc/skel/.profile /home/$USER_NAME/
@@ -26,6 +26,9 @@ echo 'kill $DBUS_SESSION_BUS_PID || true' >> /home/$USER_NAME/.bash_logout
 echo 'export PS1="[\u@ubu-chroot: \w]# "' >> /root/.bashrc 
 chown $USER_NAME:$USER_NAME /home/$USER_NAME/.bashrc
 chown $USER_NAME:$USER_NAME /home/$USER_NAME/.profile
+mkdir -p /tmp/runtime-$USER_NAME
+chmod 700 /tmp/runtime-$USER_NAME
+chown $USER_NAME:$USER_NAME /tmp/runtime-$USER_NAME
 
 apt update
 apt upgrade -y

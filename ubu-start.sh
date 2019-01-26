@@ -12,18 +12,19 @@ fi
 run_qxcompositor() {
     if [ x$1 == "xqxcompositor" ] || [ x$1 == "xxfce4" ] || [ x$1 == "xchromium" ] || [ x$1 == "xchromium-browser" ]; then
 	    if [ x$ON_DEVICE == "x1" ]; then	
-		    if [ -n "$(pgrep qxcompositor)" ]; then
+            # TODO: multi instances
+            if [ -n "$(pgrep -x -f 'qxcompositor --wayland-socket-name ../../display/wayland-ubu-1')" ]; then
 			    print_info "qxcompositor already running"
-			    exit 1
+                #exit 1
 		    fi
 
 		    if [ $(whoami) == "root" ]; then
-                su $HOST_USER -l -c "invoker --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-1 &"
+                su $HOST_USER -l -c "invoker --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-ubu-1 &"
             else
-                invoker --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-1 &
+                invoker --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-ubu-1 &
             fi
 
-		    while [ ! -f /run/display/wayland-1.lock ]; do
+            while [ ! -f /run/display/wayland-ubu-1.lock ]; do
 			    sleep 1
 		    done
 	    fi

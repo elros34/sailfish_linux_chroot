@@ -29,7 +29,7 @@ if [ -f $CHROOT_IMG ]; then
     read yn
     if [ x$yn == "xy" ]; then
         ubu_cleanup
-        #/bin/rm -f $CHROOT_IMG
+        /bin/rm -f $CHROOT_IMG
     else
 	    ./ubu-close.sh
         exit 1
@@ -64,7 +64,7 @@ tar --numeric-owner -pxzf $TARBALL -C $CHROOT_DIR/
 
 ARCH=$(uname -m)
 if [[ $ARCH == "x86"* ]]; then
-	pkcon install qemu-user-static
+    pkcon install -y qemu-user-static || true
 	cp /usr/bin/qemu-arm-static $CHROOT_DIR/usr/bin/
 fi
 
@@ -75,6 +75,7 @@ mkdir -p $CHROOT_DIR/home/$USER_NAME
 mkdir -p $CHROOT_DIR/run/display
 mkdir -p $CHROOT_DIR/media/sdcard
 mkdir -p $CHROOT_DIR/run/dbus # /var/run -> /run
+mkdir -p $CHROOT_DIR/var/lib/dbus
 mkdir -p $CHROOT_DIR/system
 mkdir -p $CHROOT_DIR/parentroot
 ln -sf /system/vendor $CHROOT_DIR/vendor
