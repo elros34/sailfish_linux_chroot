@@ -36,6 +36,14 @@ ubu_chroot() {
     if ! grep -q "$(cat $HOST_HOME_DIR/.ssh/id_rsa.pub)" $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys ; then
         cat $HOST_HOME_DIR/.ssh/id_rsa.pub >> $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys
     fi
+
+    # hw keyboard, TODO: layout
+    if [ x$ON_DEVICE == x"1" ] && [ x$SYNC_XKEYBOARD == x"1" ] && [ ! -f $CHROOT_DIR/usr/share/ubu_chroot/.xkeyboard_synced ] && [ -d $CHROOT_DIR/usr/share/X11/ ]; then
+        /bin/cp -rf /usr/share/X11/xkb $CHROOT_DIR/usr/share/X11/
+        # Xwayland/xfce doesn't like keycodes > 255
+        sed -i "/^[ \t]\+<I[3-9][0-9][0-9]>/s|^|//|g" $CHROOT_DIR/usr/share/X11/xkb/keycodes/evdev
+        touch $CHROOT_DIR/usr/share/ubu_chroot/.xkeyboard_synced
+    fi
 	
 	print_info "chrooting $CHROOT_DIR"
 	chroot $CHROOT_DIR /usr/bin/env -i \
@@ -64,11 +72,6 @@ ubu_mount() {
     	# libhybris
     	mount --bind --make-slave --read-only /system $CHROOT_DIR/parentroot/system
 	
-    	# hw keyboard, TODO: layout
-        if [ -d $CHROOT_DIR/usr/share/X11/xkb ]; then
-            mount -o bind,ro /usr/share/X11/xkb $CHROOT_DIR/usr/share/X11/xkb
-        fi
-
         # audio muted by default
         if [ x$ENABLE_AUDIO == x"1" ] && [ -d $CHROOT_DIR/tmp/runtime-$USER_NAME ]; then
             mkdir -p $CHROOT_DIR/tmp/runtime-$USER_NAME/pulse
@@ -78,7 +81,8 @@ ubu_mount() {
                mount -o bind,ro /home/$HOST_USER/.config/pulse $CHROOT_DIR/home/$USER_NAME/.config/pulse
             fi
         fi
-        mount --rbind --make-slave /run/media/$HOST_USER $CHROOT_DIR/media/sdcard
+
+        mount --rbind --make-slave /run/media/$HOST_USER $CHROOT_DIR/media/sdcard || true
     fi
 	rsync ubu-variables.sh $CHROOT_DIR/usr/share/ubu_chroot/
 }

@@ -9,7 +9,9 @@ export CHROOT_DIR=/.ubuntu
 export HOST_USER=nemo
 export HOST_HOME_DIR=/home/$HOST_USER
 export ENABLE_AUDIO=0 # don't use
+export SYNC_XKEYBOARD=1
 
 print_info() {
-    echo -e "\n=== $1 ===\n"
+    echo -e "\n\e[93m=== $1 ===\n\e[0m"
 }
+
