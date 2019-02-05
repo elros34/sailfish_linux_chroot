@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-source ubu-variables.sh
 source ubu-common.sh
 eval $TRACE_CMD
 
@@ -16,8 +15,7 @@ fi
 
 copy_configs() {
 	if [ x$1 == "xkwin" ]; then
-    	mkdir -p $CHROOT_DIR/home/$USER_NAME/.kde4/share/config/
-    	cp -f configs/kwinrc $CHROOT_DIR/home/$USER_NAME/.kde4/share/config/	
+    	cp -f configs/kwinrc $CHROOT_DIR/home/$USER_NAME/.config/	
         uburc_sed "s|display/wayland-ubu-1|display/wayland-0|"
 	elif [ x$1 == "xlxde" ]; then
 		echo $1
@@ -36,7 +34,12 @@ copy_configs() {
         fi
     	mkdir -p $CHROOT_DIR/usr/local/bin/
     	cp xwayland/Xwayland $CHROOT_DIR/usr/local/bin/
+   	    mkdir -p $CHROOT_DIR/debs/xwayland
+        cp xwayland/x11-xkb-utils_*_armhf.deb $CHROOT_DIR/debs/xwayland
         uburc_sed "s|display/wayland-0|display/wayland-ubu-1|"
+        mkdir -p $CHROOT_DIR/home/$USER_NAME/.config/autostart/
+        /bin/cp -f configs/xhost.desktop $CHROOT_DIR/home/$USER_NAME/.config/autostart/
+        
 	elif [ x$1 == "xglibc" ]; then
    	    mkdir -p $CHROOT_DIR/debs/glibc
     	/bin/cp -r -f glibc/*.deb $CHROOT_DIR/debs/glibc/

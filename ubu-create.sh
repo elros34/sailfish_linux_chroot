@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-source ubu-variables.sh
 source ubu-common.sh
 eval $TRACE_CMD
 
@@ -17,7 +16,7 @@ if [ $(mount | grep $CHROOT_DIR | wc -l) -gt 5 ]; then
 fi
 
 FREE_SPACE="$(df -h $(dirname $CHROOT_IMG) | tail -n1 | awk '{print $4}')"
-print_info "$FREE_SPACE space available, continue (Y/n)?"
+print_info "$FREE_SPACE space available ($IMG_SIZE needed), continue (Y/n)?"
 read yn
 if [ x$yn == "xn" ]; then
 	./ubu-close.sh
@@ -88,7 +87,7 @@ ubu_mount
 ubu_chroot /usr/share/ubu_chroot/create.sh
 # test connection and update known_hosts
 ubu_chroot /usr/share/ubu_chroot/chroot.sh true
-su $HOST_USER -l -c "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost true" || true
+ubu_host_user_exe "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost true" || true
 ubu_cleanup
 
 if [ x$ON_DEVICE == x"1" ]; then

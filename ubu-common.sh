@@ -8,20 +8,24 @@ if [ -f /etc/sailfish-release ] || [ -f /parentroot/etc/sailfish-release ]; then
     ON_DEVICE=1
 fi
 
-ubu_ssh() {
+ubu_host_user_exe() {
     if [ $(whoami) == "root" ]; then
-        su $HOST_USER -l -c "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost $@"
+        su $HOST_USER -l -c "$@"
     else
-        ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost $@
-    fi   
+        $@
+    fi
+}
+
+ubu_ssh() {
+    ubu_host_user_exe "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost $@"
 }
 
 ubu_chroot() {
-	rsync $(readlink -f /etc/resolv.conf) $CHROOT_DIR/etc/
-	rsync scripts/*.sh $CHROOT_DIR/usr/share/ubu_chroot/
-	rsync ubu-variables.sh $CHROOT_DIR/usr/share/ubu_chroot/
+	rsync -a $(readlink -f /etc/resolv.conf) $CHROOT_DIR/etc/
+	rsync -a scripts/*.sh $CHROOT_DIR/usr/share/ubu_chroot/
+	rsync -a ubu-variables.sh $CHROOT_DIR/usr/share/ubu_chroot/
 	chmod a+x $CHROOT_DIR/usr/share/ubu_chroot/*
-	rsync scripts/dotuburc $CHROOT_DIR/home/$USER_NAME/.uburc
+	rsync -a scripts/dotuburc $CHROOT_DIR/home/$USER_NAME/.uburc
     HOSTNAME="$(hostname)"
     if ! grep -q $HOSTNAME $CHROOT_DIR/etc/hosts ; then
         echo "127.0.1.1 $HOSTNAME" >> $CHROOT_DIR/etc/hosts
@@ -29,7 +33,7 @@ ubu_chroot() {
     #ssh-copy-id -o StrictHostKeyChecking=no  -i /home/$HOST_USER/.ssh/id_rsa.pub $USER_NAME@localhost -p 2228
 
     if [ ! -f "$HOST_HOME_DIR/.ssh/id_rsa.pub" ]; then
-        su $HOST_USER -l -c "ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa"
+        ubu_host_user_exe "ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa"
     fi
 
     #TODO remove duplicates
@@ -37,12 +41,23 @@ ubu_chroot() {
         cat $HOST_HOME_DIR/.ssh/id_rsa.pub >> $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys
     fi
 
-    # hw keyboard, TODO: layout
-    if [ x$ON_DEVICE == x"1" ] && [ x$SYNC_XKEYBOARD == x"1" ] && [ ! -f $CHROOT_DIR/usr/share/ubu_chroot/.xkeyboard_synced ] && [ -d $CHROOT_DIR/usr/share/X11/ ]; then
+    # hw keyboard
+    if [ x$ON_DEVICE == x"1" ] && [ x$SYNC_XKEYBOARD == x"1" ] && [ -d $CHROOT_DIR/usr/share/X11/xkb ] && [ ! -f .xkeyboard_synced ] && [ -f $CHROOT_DIR/usr/share/ubu_chroot/.create_finished ]; then
         /bin/cp -rf /usr/share/X11/xkb $CHROOT_DIR/usr/share/X11/
-        # Xwayland/xfce doesn't like keycodes > 255
-        sed -i "/^[ \t]\+<I[3-9][0-9][0-9]>/s|^|//|g" $CHROOT_DIR/usr/share/X11/xkb/keycodes/evdev
-        touch $CHROOT_DIR/usr/share/ubu_chroot/.xkeyboard_synced
+        XKB_LAYOUT=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/layout")
+        XKB_MODEL=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/model")
+        XKB_RULES=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/rules")
+        XKB_OPTIONS=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/options")
+        # default values
+        : "${XKB_LAYOUT:=us}"
+        : "${XKB_MODEL:=jollasbj}"
+        : "${XKB_RULES:=evdev}"
+        SETXKBMAP="setxkbmap -layout $XKB_LAYOUT -rules $XKB_RULES -model $XKB_MODEL -option $XKB_OPTIONS"
+        sed -i "/^Exec=/s|=.*|=$SETXKBMAP|" configs/setxkbmap.desktop
+        mkdir -p $CHROOT_DIR/home/$USER_NAME/.config/autostart/
+        print_info "set xkeyboard config in ~/.config/autostart/setxkbmap.desktop"
+        /bin/cp -f configs/setxkbmap.desktop $CHROOT_DIR/home/$USER_NAME/.config/autostart/   
+        touch .xkeyboard_synced
     fi
 	
 	print_info "chrooting $CHROOT_DIR"
@@ -73,9 +88,9 @@ ubu_mount() {
     	mount --bind --make-slave --read-only /system $CHROOT_DIR/parentroot/system
 	
         # audio muted by default
-        if [ x$ENABLE_AUDIO == x"1" ] && [ -d $CHROOT_DIR/tmp/runtime-$USER_NAME ]; then
-            mkdir -p $CHROOT_DIR/tmp/runtime-$USER_NAME/pulse
-            mount --bind /run/user/100000/pulse $CHROOT_DIR/tmp/runtime-$USER_NAME/pulse
+        if [ x$ENABLE_AUDIO == x"1" ] && [ -d $CHROOT_DIR/run/user/100000 ]; then
+            mkdir -p $CHROOT_DIR/run/user/100000/pulse
+            mount --bind /run/user/100000/pulse $CHROOT_DIR/run/user/100000/pulse
             mount --bind /var/lib/dbus $CHROOT_DIR/var/lib/dbus
             if [ -d $CHROOT_DIR/home/$USER_NAME/.config/pulse ]; then
                mount -o bind,ro /home/$HOST_USER/.config/pulse $CHROOT_DIR/home/$USER_NAME/.config/pulse
@@ -84,7 +99,6 @@ ubu_mount() {
 
         mount --rbind --make-slave /run/media/$HOST_USER $CHROOT_DIR/media/sdcard || true
     fi
-	rsync ubu-variables.sh $CHROOT_DIR/usr/share/ubu_chroot/
 }
 
 # /var/run -> /run
@@ -98,7 +112,16 @@ ubu_cleanup_procs() {
         kill "$(cat $CHROOT_DIR/run/dbus/pid)" || true
         /bin/rm -f $CHROOT_DIR/run/dbus/pid
     fi
-    
+	
+    if [ -f $CHROOT_DIR/run/display/wayland-ubu-1.lock ]; then
+        kill "$(ubu_qxcompositor_pid)" || true
+		/bin/rm -f $CHROOT_DIR/run/display/wayland-ubu-1.lock
+    fi
+	
+	if [ -f $CHROOT_DIR/tmp/.X0-lock ]; then
+		/bin/rm -f $CHROOT_DIR/tmp/.X0-lock
+	fi
+
     fuser -kv $CHROOT_DIR || true
     sleep 1
 }
@@ -167,7 +190,13 @@ ubu_ssh_pid() {
     pgrep -u root -x -f '/usr/sbin/sshd -p 2228'
 }
 
+ubu_qxcompositor_pid() {
+    pgrep -u $HOST_USER -f 'qxcompositor --wayland-socket-name ../../display/wayland-ubu-1'
+}
+
 uburc_sed() {
     sed -i $1 scripts/dotuburc
     sed -i $1 $CHROOT_DIR/home/$USER_NAME/.uburc
 }
+
+

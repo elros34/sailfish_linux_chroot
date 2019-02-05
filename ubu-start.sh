@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-source ubu-variables.sh
 source ubu-common.sh
 eval $TRACE_CMD
 
@@ -13,21 +12,19 @@ run_qxcompositor() {
     if [ x$1 == "xqxcompositor" ] || [ x$1 == "xxfce4" ] || [ x$1 == "xchromium" ] || [ x$1 == "xchromium-browser" ]; then
 	    if [ x$ON_DEVICE == "x1" ]; then	
             # TODO: multi instances
-            if [ -n "$(pgrep -x -f 'qxcompositor --wayland-socket-name ../../display/wayland-ubu-1')" ]; then
+            if [ -n "$(ubu_qxcompositor_pid)" ]; then
 			    print_info "qxcompositor already running"
-                #exit 1
+                return 0
 		    fi
 
-		    if [ $(whoami) == "root" ]; then
-                su $HOST_USER -l -c "invoker --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-ubu-1 &"
-            else
-                invoker --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-ubu-1 &
-            fi
+            ubu_host_user_exe "invoker --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-ubu-1" &
 
             while [ ! -f /run/display/wayland-ubu-1.lock ]; do
 			    sleep 1
 		    done
 	    fi
+    else
+        exit 1
     fi
 }
 
@@ -37,14 +34,18 @@ if [ -z "$(ubu_ssh_pid)" ]; then # first start
         exit 10
     else
         run_qxcompositor $1
-        bash ./ubu-chroot.sh sudo --login --user=$USER_NAME /usr/share/ubu_chroot/start.sh $@
+		if [ x$1 == x"qxcompositor" ]; then # just open shell
+			./ubu-chroot.sh
+		else
+        	bash ./ubu-chroot.sh sudo --login --user=$USER_NAME /usr/share/ubu_chroot/start.sh $@
+		fi
     fi
 else # chroot ready, ssh to it
     run_qxcompositor $1
-    if [ $(whoami) == "root" ]; then
-        su $HOST_USER -l -c "ssh -p 2228 $USER_NAME@localhost /usr/share/ubu_chroot/start.sh $@"
-    else
-        ssh -p 2228 $USER_NAME@localhost /usr/share/ubu_chroot/start.sh $@
+	if [ x$1 == x"qxcompositor" ]; then
+		./ubu-chroot.sh
+	else
+		ubu_ssh "/usr/share/ubu_chroot/start.sh $@"
     fi   
 fi
 

@@ -19,12 +19,12 @@ if [ $# -eq 0 ];then
 fi
 
 start_xwayland() {
-    export WAYLAND_DISPLAY=../../run/display/wayland-ubu-1
+    export WAYLAND_DISPLAY=../../display/wayland-ubu-1
     if [ -f /tmp/.X0-lock ]; then
         print_info "Xwayland already running"
     else
         Xwayland -nolisten tcp &
-        i=20
+        i=10
         while [ $i -gt 0 ]; do
             if [ -f /tmp/.X0-lock ]; then
                 break

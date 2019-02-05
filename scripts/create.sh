@@ -26,9 +26,9 @@ echo 'kill $DBUS_SESSION_BUS_PID || true' >> /home/$USER_NAME/.bash_logout
 echo 'export PS1="[\u@ubu-chroot: \w]# "' >> /root/.bashrc 
 chown $USER_NAME:$USER_NAME /home/$USER_NAME/.bashrc
 chown $USER_NAME:$USER_NAME /home/$USER_NAME/.profile
-mkdir -p /tmp/runtime-$USER_NAME
-chmod 700 /tmp/runtime-$USER_NAME
-chown $USER_NAME:$USER_NAME /tmp/runtime-$USER_NAME
+mkdir -p /run/user/100000
+chmod 700 /run/user/100000
+chown $USER_NAME:$USER_NAME /run/user/100000
 
 apt update
 apt upgrade -y
@@ -52,5 +52,7 @@ chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/.ssh/
 /bin/rm -f /etc/update-motd.d/{60-unminimize,10-help-text}
 
 apt clean
+
+touch /usr/share/ubu_chroot/.create_finished
 
 
