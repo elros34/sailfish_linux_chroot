@@ -15,7 +15,7 @@ echo "arguments: $@"
 
 if [ $# -eq 0 ];then
     print_info "supported compositors: kwin, weston, qxcompositor, xfce4, chromium"
-	exit 1
+    exit 1
 fi
 
 start_xwayland() {
@@ -36,12 +36,12 @@ start_xwayland() {
 }
 
 if [ x$1 == "xkwin" ]; then
-	kwin_wayland --width $DISPLAY_WIDTH --height $DISPLAY_HEIGHT --xwayland &
+    kwin_wayland --width $DISPLAY_WIDTH --height $DISPLAY_HEIGHT --xwayland &
 elif [ x$1 == "xweston" ]; then
-	weston
+    weston
 elif [ x$1 == "xxfce4" ] || [ x$1 == "xxfce" ]; then
     start_xwayland
-	startxfce4
+    startxfce4
 elif [ x$1 == "xqxcompositor" ]; then
     start_xwayland
 elif [ x$1 == "xchromium" ] || [ x$1 == "xchromium-browser" ]; then #only for hw keyboard devices
@@ -50,11 +50,11 @@ elif [ x$1 == "xchromium" ] || [ x$1 == "xchromium-browser" ]; then #only for hw
     #matchbox-window-manager -use_titlebar no &
     H="$(bc <<< $DISPLAY_HEIGHT/$CHROMIUM_SCALE)"
     W="$(bc <<< $DISPLAY_WIDTH/$CHROMIUM_SCALE)"
-	chromium-browser --force-device-scale-factor=$CHROMIUM_SCALE --window-size=$H,$W --window-position=0,0 $@
+    chromium-browser --force-device-scale-factor=$CHROMIUM_SCALE --window-size=$H,$W --window-position=0,0 $@
     #TODO: onboard --layout=Phone, autoshow/hide for hw keyboard less devices
 else
-	print_info "supported compositors: kwin, weston, qxcompositor"
-	$@
+    print_info "supported compositors: kwin, weston, qxcompositor"
+    $@
 fi
 
 

@@ -19,12 +19,12 @@ if [ -z "$(ubu_ssh_pid)" ]; then # first start
     else # root
         MOUNTS=$(mount | grep $CHROOT_DIR | wc -l)
         if [ $MOUNTS -gt 5 ]; then
-	        print_info "$CHROOT_DIR already mounted"
-	        _ubu_chroot $@
-	        ubu_cleanup
+            print_info "$CHROOT_DIR already mounted"
+            _ubu_chroot $@
+            ubu_cleanup
         elif [ $MOUNTS -gt 0 ]; then
-	        print_info "$CHROOT_DIR partially mounted"
-	        ./ubu-close.sh
+            print_info "$CHROOT_DIR partially mounted"
+            ./ubu-close.sh
         else
             ubu_mount_img
             ubu_mount

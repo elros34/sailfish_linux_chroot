@@ -11,15 +11,15 @@ fi
 # Never mount /dev twice
 if [ $(mount | grep $CHROOT_DIR | wc -l) -gt 5 ]; then
     print_info "$CHROOT_DIR already mounted"
-	./ubu-close.sh
-	exit 1
+    ./ubu-close.sh
+    exit 1
 fi
 
 FREE_SPACE="$(df -h $(dirname $CHROOT_IMG) | tail -n1 | awk '{print $4}')"
 print_info "$FREE_SPACE space available ($IMG_SIZE needed), continue (Y/n)?"
 read yn
 if [ x$yn == "xn" ]; then
-	./ubu-close.sh
+    ./ubu-close.sh
     exit 1
 fi
 
@@ -30,7 +30,7 @@ if [ -f $CHROOT_IMG ]; then
         ubu_cleanup
         /bin/rm -f $CHROOT_IMG
     else
-	    ./ubu-close.sh
+        ./ubu-close.sh
         exit 1
     fi
 fi
@@ -53,8 +53,8 @@ fi
 
 TARBALL=$(basename $TARGET_URL)
 if [ ! -e $TARBALL ] || [ $(du -m $TARBALL | cut -f1) -lt 20 ]; then
-	rm -f $TARBALL
-	curl -O -J -L $TARGET_URL
+    rm -f $TARBALL
+    curl -O -J -L $TARGET_URL
     chown $HOST_USER:$HOST_USER $TARBALL
 fi
 
@@ -64,7 +64,7 @@ tar --numeric-owner -pxzf $TARBALL -C $CHROOT_DIR/
 ARCH=$(uname -m)
 if [[ $ARCH == "x86"* ]]; then
     pkcon install -y qemu-user-static || true
-	cp /usr/bin/qemu-arm-static $CHROOT_DIR/usr/bin/
+    cp /usr/bin/qemu-arm-static $CHROOT_DIR/usr/bin/
 fi
 
 mkdir -p $CHROOT_DIR/usr/share/ubu_chroot/

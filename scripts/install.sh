@@ -6,18 +6,18 @@ eval $TRACE_CMD
 
 if [ $# -eq 0 ]; then
     echo "supported arguments: kwin, lxde, weston, qxcompositor, glibc, chromium-browser"
-	exit 1
+    exit 1
 fi
 
 if [ x$1 == "xkwin" ]; then
-	# xhost, kwin
-	# plasma-active-default-settings: provide kdeglobals needed by kwin_wayland. Without kdeglobals file kwin is unusable slow
-	apt install -y --no-install-recommends x11-xserver-utils kwin-wayland xwayland kwin-wayland-backend-wayland kwin-wayland-backend-x11
+    # xhost, kwin
+    # plasma-active-default-settings: provide kdeglobals needed by kwin_wayland. Without kdeglobals file kwin is unusable slow
+    apt install -y --no-install-recommends x11-xserver-utils kwin-wayland xwayland kwin-wayland-backend-wayland kwin-wayland-backend-x11
     #ln -fs /usr/share/kservicetypes5/kwineffect.desktop /usr/share/kservicetypes5/kwin-effect.desktop 
     #ln -fs /usr/share/kservicetypes5/kwinscript.desktop /usr/share/kservicetypes5/kwin-script.desktop
-	
+
 elif [ x$1 == "xlxde" ]; then
-	# lxde, xprop
+    # lxde, xprop
     apt install -y lxde x11-utils lxterminal 
 elif [ x$1 == "xxfce4" ]; then
     apt install -y xfce4 xfce4-goodies || true
@@ -40,15 +40,15 @@ elif [ x$1 == "xqxcompositor" ]; then
     ln -fs /usr/bin/xkbcomp /usr/local/bin/
 
 elif [ x$1 == "xglibc" ]; then
-	echo "libc6 hold" | dpkg --set-selections
+    echo "libc6 hold" | dpkg --set-selections
     echo "libc-bin hold" | dpkg --set-selections
-	cd /debs/glibc
-	dpkg -i libc6_2.27*.deb libc6-armel_2.27*.deb libc-bin_2.27*.deb locales_2.27*.deb multiarch-support_2.27*.deb
+    cd /debs/glibc
+    dpkg -i libc6_2.27*.deb libc6-armel_2.27*.deb libc-bin_2.27*.deb locales_2.27*.deb multiarch-support_2.27*.deb
 
 elif [ x$1 == "xlibhybris" ]; then
     apt install -y libwayland-client0 libwayland-server0 libegl1 libgles2
-	cd /debs/libhybris
-	dpkg -i libhybris-common1_*.deb libhybris_0*.deb libhybris-test_*.deb libhybris-utils_*.deb libandroid-properties1_*.deb libhardware2_*.deb libmedia1_*.deb
+    cd /debs/libhybris
+    dpkg -i libhybris-common1_*.deb libhybris_0*.deb libhybris-test_*.deb libhybris-utils_*.deb libandroid-properties1_*.deb libhardware2_*.deb libmedia1_*.deb
     update-alternatives --set arm-linux-gnueabihf_egl_conf /usr/lib/arm-linux-gnueabihf/libhybris-egl/ld.so.conf 
     #FIXME
     sed -i 's!# Multiarch support!# Multiarch support\n/usr/lib/arm-linux-gnueabihf/libhybris-egl!' /etc/ld.so.conf.d/arm-linux-gnueabihf.conf
@@ -58,8 +58,8 @@ elif [ x$1 == "xchromium-browser" ]; then
     apt install chromium-browser #matchbox-window-manager
 
 else
-	echo "supported arguments: kwin, lxde, weston, qxcompositor, glibc"
-	exit 1
+    echo "supported arguments: kwin, lxde, weston, qxcompositor, glibc"
+    exit 1
 fi
 
 # Disable screensaver
