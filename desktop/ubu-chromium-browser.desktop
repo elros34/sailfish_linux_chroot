@@ -2,10 +2,10 @@
 Type=Application
 Categories=Ubuntu;
 X-Nemo-Application-Type=no-invoker
-Icon=icon-launcher-shell
-Exec=bash -c "cd UBU_CHROOT_PATH; ./desktop/ubu-exec.sh chromium-browser"
+Icon=icon-launcher-browser
+Exec=bash -c "cd UBU_CHROOT_PATH; ./desktop/ubu-exec.sh chromium-browser %U"
 Name=Ubu Chromium
 # X-Nemo-Single-Instance is ignored by lipstick launcher, patch is needed
 X-Nemo-Single-Instance=no
 Terminal=false
-
+MimeType=x-scheme-handler/http;x-scheme-handler/https

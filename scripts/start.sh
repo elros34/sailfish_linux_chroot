@@ -35,16 +35,16 @@ start_xwayland() {
     fi
 }
 
-if [ x$1 == "xkwin" ]; then
-    kwin_wayland --width $DISPLAY_WIDTH --height $DISPLAY_HEIGHT --xwayland &
-elif [ x$1 == "xweston" ]; then
+if [ "$1" == "kwin" ]; then
+    kwin_wayland --width $DISPLAY_WIDTH --height $DISPLAY_HEIGHT --xwayland --wayland-display ../../display/wayland-0 --socket ../../display/wayland-kwin &
+elif [ "$1" == "weston" ]; then
     weston
-elif [ x$1 == "xxfce4" ] || [ x$1 == "xxfce" ]; then
+elif [ "$1" == "xfce4" ] || [ "$1" == "xfce" ]; then
     start_xwayland
     startxfce4
-elif [ x$1 == "xqxcompositor" ]; then
+elif [ "$1" == "qxcompositor" ]; then
     start_xwayland
-elif [ x$1 == "xchromium" ] || [ x$1 == "xchromium-browser" ]; then #only for hw keyboard devices
+elif [ "$1" == "chromium" ] || [ "$1" == "chromium-browser" ]; then #only for hw keyboard devices
     shift
     start_xwayland
     #matchbox-window-manager -use_titlebar no &

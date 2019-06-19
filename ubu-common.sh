@@ -8,6 +8,7 @@ if [ -f /etc/sailfish-release ] || [ -f /parentroot/etc/sailfish-release ]; then
     ON_DEVICE=1
 fi
 
+# Warning: "last login .. pts" message in device but not in ssh (util-linux 2.33+git1)
 ubu_host_user_exe() {
     if [ $(whoami) == "root" ]; then
         su $HOST_USER -l -c "$@"
@@ -41,13 +42,19 @@ ubu_chroot() {
         cat $HOST_HOME_DIR/.ssh/id_rsa.pub >> $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys
     fi
 
+    # Make sure ChrootDirectory has right permissions to meet sshd requirements
+    if [ "$(stat -c "%a %G:%U" $CHROOT_DIR)" != "755 root:root" ]; then
+        chown root:root $CHROOT_DIR
+        chmod 755 $CHROOT_DIR
+    fi
+
     # hw keyboard
-    if [ x$ON_DEVICE == x"1" ] && [ x$SYNC_XKEYBOARD == x"1" ] && [ -d $CHROOT_DIR/usr/share/X11/xkb ] && [ ! -f .xkeyboard_synced ] && [ -f $CHROOT_DIR/usr/share/ubu_chroot/.create_finished ]; then
+    if [ "$ON_DEVICE" == "1" ] && [ "$SYNC_XKEYBOARD" == "1" ] && [ -d $CHROOT_DIR/usr/share/X11/xkb ] && [ ! -f .xkeyboard_synced ] && [ -f $CHROOT_DIR/usr/share/ubu_chroot/.create_finished ]; then
         /bin/cp -rf /usr/share/X11/xkb $CHROOT_DIR/usr/share/X11/
-        XKB_LAYOUT=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/layout")
-        XKB_MODEL=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/model")
-        XKB_RULES=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/rules")
-        XKB_OPTIONS=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/options")
+        XKB_LAYOUT=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/layout" | grep -v "pts/" || true)
+        XKB_MODEL=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/model" | grep -v "pts/" || true)
+        XKB_RULES=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/rules" | grep -v "pts/" || true)
+        XKB_OPTIONS=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/options" | grep -v "pts/" || true)
         # default values
         : "${XKB_LAYOUT:=us}"
         : "${XKB_MODEL:=jollasbj}"
@@ -72,15 +79,15 @@ ubu_mount() {
         mkdir $CHROOT_DIR
     fi
     mount --bind /dev $CHROOT_DIR/dev
-    mount --bind /dev/pts $CHROOT_DIR/dev/pts
+    mount --bind -o mode=620 /dev/pts $CHROOT_DIR/dev/pts
     mount --bind /dev/shm $CHROOT_DIR/dev/shm
     mount --bind /sys $CHROOT_DIR/sys
     mount --bind /proc $CHROOT_DIR/proc
-    mount --rbind --make-rslave --read-only / $CHROOT_DIR/parentroot
-    mount --rbind --make-rslave $HOST_HOME_DIR $CHROOT_DIR/home/host-user
+    mount --bind --make-slave --read-only / $CHROOT_DIR/parentroot
+    mount --bind --make-slave $HOST_HOME_DIR $CHROOT_DIR/home/host-user
     mount --bind /tmp $CHROOT_DIR/tmp
 
-    if [ x$ON_DEVICE == x"1" ]; then
+    if [ "$ON_DEVICE" == "1" ]; then
         # wayland
         mount --bind /run/display $CHROOT_DIR/run/display
 
@@ -88,7 +95,7 @@ ubu_mount() {
         mount --bind --make-slave --read-only /system $CHROOT_DIR/parentroot/system
 
         # audio muted by default
-        if [ x$ENABLE_AUDIO == x"1" ] && [ -d $CHROOT_DIR/run/user/100000 ]; then
+        if [ "$ENABLE_AUDIO" == "1" ] && [ -d $CHROOT_DIR/run/user/100000 ]; then
             mkdir -p $CHROOT_DIR/run/user/100000/pulse
             mount --bind /run/user/100000/pulse $CHROOT_DIR/run/user/100000/pulse
             mount --bind /var/lib/dbus $CHROOT_DIR/var/lib/dbus
@@ -132,26 +139,27 @@ ubu_cleanup_procs() {
     sleep 1
 }
 
+# TODO losetup
 ubu_umount() {
     umount $CHROOT_DIR/media/sdcard/*  || true
     #rm -fd $CHROOT_DIR/media/sdcard/*
-    umount -R $CHROOT_DIR || true
+    umount -dR $CHROOT_DIR || true
     for dir in $(mount | grep $CHROOT_DIR | cut -f 3 -d" " | sort -r); do
         print_info "unmounting $dir"
-        if [ x$1 == x"force" ]; then
+        if [ "$1" == "force" ]; then
             umount -flR $CHROOT_DIR || true
         else
             umount -R $dir || true
         fi
     done
-    umount -R $CHROOT_DIR || true
+    umount -dR $CHROOT_DIR || true
 }
 
 # Clean up
 ubu_cleanup() {
     print_info "Active processes: "
     fuser -v $CHROOT_DIR 2>&1 | grep -ve USER -ve '^&' || true
-    if [ x$1 == x"force" ]; then
+    if [ "$1" == "force" ]; then
         ubu_cleanup_procs
         ubu_umount
         CNT="$(fuser -v $CHROOT_DIR 2>/dev/null | wc -w)"
@@ -159,7 +167,7 @@ ubu_cleanup() {
             sfossdk_cleanup_procs
             print_info "$CHROT_DIR busy!\nDo you want to force unmount (y/N)?"
             read yn
-            if [ x$yn == "xy" ]; then
+            if [ "$yn" == "y" ]; then
                 ubu_umount force
             else
                 ubu_umount
@@ -188,6 +196,10 @@ ubu_cleanup() {
     if [ -z "$(mount | grep $CHROOT_DIR)" ]; then
         print_info "Unmount completed"
     fi
+
+    if [ -n "$(losetup --associated $CHROOT_IMG)" ]; then
+        print_info "$CHROOT_IMG still in use"
+    fi     
 }
 
 ubu_mount_img() {

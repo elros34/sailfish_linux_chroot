@@ -9,12 +9,12 @@ if [ $1 == "ubu-shell" ]; then # executed always in fingerterm
 
     exec bash 
 else 
-    ./ubu-start.sh $1
+    ./ubu-start.sh $@
     if [ $? -ne 10 ]; then
        exit
     fi
 
-    invoker --type=generic fingerterm -e "echo -e '\n=== ubu $1 ===\n'; devel-su ./ubu-start.sh $1; exec bash" 
+    invoker --type=generic fingerterm -e "echo -e '\n=== ubu $1 ===\n'; devel-su ./ubu-start.sh $@; exec bash" 
 fi
 
 

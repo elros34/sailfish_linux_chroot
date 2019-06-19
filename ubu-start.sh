@@ -9,8 +9,8 @@ if [ $# -eq 0 ]; then
 fi
 
 run_qxcompositor() {
-    if [ x$1 == "xqxcompositor" ] || [ x$1 == "xxfce4" ] || [ x$1 == "xchromium" ] || [ x$1 == "xchromium-browser" ]; then
-        if [ x$ON_DEVICE == "x1" ]; then
+    if [ "$1" == "qxcompositor" ] || [ "$1" == "xfce4" ] || [ "$1" == "chromium" ] || [ "$1" == "chromium-browser" ]; then
+        if [ "$ON_DEVICE" == "1" ]; then
             # TODO: multi instances
             if [ -n "$(ubu_qxcompositor_pid)" ]; then
                 print_info "qxcompositor already running"
@@ -34,7 +34,7 @@ if [ -z "$(ubu_ssh_pid)" ]; then # first start
         exit 10
     else
         run_qxcompositor $1
-        if [ x$1 == x"qxcompositor" ]; then # just open shell
+        if [ "$1" == "qxcompositor" ]; then # just open shell
             ./ubu-chroot.sh
         else
             bash ./ubu-chroot.sh sudo --login --user=$USER_NAME /usr/share/ubu_chroot/start.sh $@
@@ -42,7 +42,7 @@ if [ -z "$(ubu_ssh_pid)" ]; then # first start
     fi
 else # chroot ready, ssh to it
     run_qxcompositor $1
-    if [ x$1 == x"qxcompositor" ]; then
+    if [ "$1" == "qxcompositor" ]; then
         ./ubu-chroot.sh
     else
         ubu_ssh "/usr/share/ubu_chroot/start.sh $@"

@@ -21,7 +21,7 @@ su $USER_NAME -c "mkdir -p /home/$USER_NAME/.config/pulse"
 # pgrep --uid 100000 dbus-daemon
 cp /etc/skel/.bashrc /home/$USER_NAME/
 cp /etc/skel/.profile /home/$USER_NAME/
-echo 'source .uburc' >> /home/$USER_NAME/.bashrc
+echo 'source ~/.uburc' >> /home/$USER_NAME/.bashrc
 echo 'kill $DBUS_SESSION_BUS_PID || true' >> /home/$USER_NAME/.bash_logout
 echo 'export PS1="[\u@ubu-chroot: \w]# "' >> /root/.bashrc 
 chown $USER_NAME:$USER_NAME /home/$USER_NAME/.bashrc
@@ -32,7 +32,7 @@ chown $USER_NAME:$USER_NAME /run/user/100000
 
 apt update
 apt upgrade -y
-apt install -y vim dialog locales command-not-found kbd bash-completion sed dbus-x11 apt-file psmisc sudo openssh-server apt-utils unionfs-fuse bc
+apt install -y vim dialog locales command-not-found kbd bash-completion sed dbus-x11 apt-file psmisc sudo openssh-server apt-utils unionfs-fuse bc rsync
 apt-file update
 usermod -aG sudo $USER_NAME
 dpkg-reconfigure locales
