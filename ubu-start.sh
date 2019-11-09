@@ -17,7 +17,7 @@ run_qxcompositor() {
                 return 0
             fi
 
-            ubu_host_user_exe "invoker --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-ubu-1" &
+            ubu_host_user_exe "invoker --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-ubu-1 -u user -p 2228" &
 
             while [ ! -f /run/display/wayland-ubu-1.lock ]; do
                 sleep 1

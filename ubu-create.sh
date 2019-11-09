@@ -26,7 +26,7 @@ fi
 if [ -f $CHROOT_IMG ]; then
     print_info "$CHROOT_IMG exists, do you want to overwrite it (y/N)?"
     read yn
-    if [ x$yn == "xy" ]; then
+    if [ "$yn" == "y" ]; then
         ubu_cleanup
         /bin/rm -f $CHROOT_IMG
     else
@@ -41,6 +41,7 @@ mkfs.ext4 -O ^has_journal,^metadata_csum $CHROOT_IMG
 e2fsck -yf $CHROOT_IMG
 mkdir -p $CHROOT_DIR
 ubu_mount_img
+touch $CHROOT_DIR/.nomedia
 
 if [[ "$(uname -r)" == "3.0"* ]]; then
     TARGET_URL=$TARGET_URL2
@@ -93,11 +94,8 @@ ubu_host_user_exe "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost 
 ubu_cleanup
 
 if [ "$ON_DEVICE" == "1" ]; then
-    sed -i "s!UBU_CHROOT_PATH!$(pwd)!g" desktop/ubu-shell.desktop
-    sed -i "s!UBU_CHROOT_PATH!$(pwd)!g" desktop/ubu-close.desktop
-    /bin/cp -f desktop/ubu-shell.desktop /usr/share/applications/
-    /bin/cp -f desktop/ubu-close.desktop /usr/share/applications/
-    update-desktop-database
+    ubu_install_desktop "ubu-shell.desktop"
+    ubu_install_desktop "ubu-close.desktop"
 fi
 
 print_info "Image created. Now you can run ubu-install.sh"

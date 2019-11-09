@@ -6,8 +6,6 @@ CHROOT_IMG=ubuntu-19.04-armhf.ext4
 export TRACE_CMD="set +x"
 export USER_NAME=user
 export CHROOT_DIR=/.ubuntu
-export HOST_USER=nemo
-export HOST_HOME_DIR=/home/$HOST_USER
 export ENABLE_AUDIO=0 # don't use
 export SYNC_XKEYBOARD=1 # .xkeyboard_synced
 

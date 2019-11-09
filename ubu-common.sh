@@ -8,6 +8,12 @@ if [ -f /etc/sailfish-release ] || [ -f /parentroot/etc/sailfish-release ]; then
     ON_DEVICE=1
 fi
 
+export HOST_USER="$(logname 2>/dev/null)"
+if [ -z "$HOST_USER" ]; then
+    HOST_USER="$(loginctl --no-legend list-users | awk '!/root/ {print $2}' | head -n1)"
+fi
+export HOST_HOME_DIR=/home/$HOST_USER
+
 # Warning: "last login .. pts" message in device but not in ssh (util-linux 2.33+git1)
 ubu_host_user_exe() {
     if [ $(whoami) == "root" ]; then
@@ -46,6 +52,16 @@ ubu_chroot() {
     if [ "$(stat -c "%a %G:%U" $CHROOT_DIR)" != "755 root:root" ]; then
         chown root:root $CHROOT_DIR
         chmod 755 $CHROOT_DIR
+    fi
+
+    if [ "$ON_DEVICE" == "1" ] && [ ! -f .screen_dimensions_set ]; then
+        WIDTH=$(ubu_host_user_exe "dconf read /lipstick/screen/primary/width" | grep -v "pts/" || true)
+        HEIGHT=$(ubu_host_user_exe "dconf read /lipstick/screen/primary/height" | grep -v "pts/" || true)
+        if [ -n "$WIDTH" ]; then
+            uburc_sed "/^export DISPLAY_WIDTH=/s|=.*|=$WIDTH|"
+            uburc_sed "/^export DISPLAY_HEIGHT=/s|=.*|=$HEIGHT|"
+            touch .screen_dimensions_set
+        fi
     fi
 
     # hw keyboard
@@ -135,14 +151,14 @@ ubu_cleanup_procs() {
         /bin/rm -f $CHROOT_DIR/tmp/.X0-lock
     fi
 
-    fuser -kv $CHROOT_DIR || true
-    sleep 1
+    print_info "killing:"
+    fuser -kv --mount --ismountpoint $CHROOT_DIR || true
 }
 
 # TODO losetup
 ubu_umount() {
     umount $CHROOT_DIR/media/sdcard/*  || true
-    #rm -fd $CHROOT_DIR/media/sdcard/*
+    rmdir $CHROOT_DIR/media/sdcard/* || true
     umount -dR $CHROOT_DIR || true
     for dir in $(mount | grep $CHROOT_DIR | cut -f 3 -d" " | sort -r); do
         print_info "unmounting $dir"
@@ -157,14 +173,18 @@ ubu_umount() {
 
 # Clean up
 ubu_cleanup() {
+    if ! mountpoint -q $CHROOT_DIR ; then
+        print_info "$CHROOT_DIR not mounted"
+        return 0
+    fi
     print_info "Active processes: "
-    fuser -v $CHROOT_DIR 2>&1 | grep -ve USER -ve '^&' || true
+    fuser -v --mount --ismountpoint $CHROOT_DIR 2>&1 | grep -ve USER -ve '^$' || true
     if [ "$1" == "force" ]; then
         ubu_cleanup_procs
         ubu_umount
-        CNT="$(fuser -v $CHROOT_DIR 2>/dev/null | wc -w)"
+        CNT="$(fuser -v --ismountpoint $CHROOT_DIR 2>/dev/null | wc -w)"
         if [ $CNT -gt 0 ]; then
-            sfossdk_cleanup_procs
+            ubu_cleanup_procs
             print_info "$CHROT_DIR busy!\nDo you want to force unmount (y/N)?"
             read yn
             if [ "$yn" == "y" ]; then
@@ -175,10 +195,10 @@ ubu_cleanup() {
         fi
     else
         # unmount only if nothing was started by the user
-        CNT="$(fuser -v $CHROOT_DIR 2>/dev/null | wc -w)"
+        CNT="$(fuser -v --ismountpoint $CHROOT_DIR 2>/dev/null | wc -w)"
         if [ $CNT -gt 1 ]; then
             # mount, unionfs, #dbus-daemon (dbus-launch), sshd, systemd-logind ?
-            RES="$(fuser -v $CHROOT_DIR 2>&1 || true)"
+            RES="$(fuser -v --ismountpoint $CHROOT_DIR 2>&1 || true)"
             if [ $CNT -eq 4 ] && [ -n "$(echo $RES | grep 'unionfs.*systemd-logind')" ] || \
                [ $CNT -eq 3 ] && [ -n "$(echo $RES | grep unionfs)" ] || \
                [ $CNT -le 2 ]; then
@@ -198,7 +218,7 @@ ubu_cleanup() {
     fi
 
     if [ -n "$(losetup --associated $CHROOT_IMG)" ]; then
-        print_info "$CHROOT_IMG still in use"
+        print_info "$CHROOT_IMG still in use!"
     fi     
 }
 
@@ -215,8 +235,13 @@ ubu_qxcompositor_pid() {
 }
 
 uburc_sed() {
-    sed -i $1 scripts/dotuburc
-    sed -i $1 $CHROOT_DIR/home/$USER_NAME/.uburc
+    sed -i "$@" scripts/dotuburc
+    sed -i "$@" $CHROOT_DIR/home/$USER_NAME/.uburc
+}
+
+ubu_install_desktop() {
+    sed "s|UBU_CHROOT_PATH|$(pwd)|g" "desktop/$1" > "/usr/share/applications/$1"
+    update-desktop-database 2>&1 | grep -v x-maemo-highlight || true
 }
 
 

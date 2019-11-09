@@ -8,7 +8,7 @@ git clone --depth=1 https://github.com/elros34/sailfish_ubu_chroot.git
 cd sailfish_ubu_chroot
 ```
 
-Set path (CHROOT_IMG) in ubu-variables.sh if you want to create image in different place then current directory
+Set path (CHROOT_IMG) in ubu-variables.sh if you want to create image in different place than current directory
 
 ```
 devel-su

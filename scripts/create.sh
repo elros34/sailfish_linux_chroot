@@ -3,7 +3,6 @@ set -e
 source /usr/share/ubu_chroot/ubu-variables.sh
 eval $TRACE_CMD
 
-touch /.nomedia
 export PS1="[\u@ubu-chroot: \w]# "
 
 useradd $USER_NAME --uid 100000 -U -m --shell /bin/bash

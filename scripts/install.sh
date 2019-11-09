@@ -35,7 +35,7 @@ for opt in $@; do
         ;;
     "qxcompositor")
         # For dependecies
-        apt install -y xwayland
+        apt install -y xwayland xsel
         mkdir -p /usr/local/share/X11/xkb/rules
         ln -fs /usr/share/X11/xkb/rules/evdev /usr/local/share/X11/xkb/rules/
         ln -fs /usr/bin/xkbcomp /usr/local/bin/

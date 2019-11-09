@@ -15,7 +15,7 @@ export QT_WAYLAND_FORCE_DPI=96
 export CHROMIUM_SCALE=1.5
 #export QT_IM_MODULE=qtvirtualkeyboard
 export DISPLAY=:0
-DISPLAY_RES=$(cat /sys/class/graphics/fb0/modes | grep -Eo '[0-9]+x[0-9]+')
+DISPLAY_RES=$(cat /sys/class/graphics/fb0/modes | head -n1 | grep -Eo '[0-9]+x[0-9]+')
 if [ -z "$DISPLAY_RES" ]; then # FIXME: fallback for xperia x
     DISPLAY_RES="1080x1920"
 fi

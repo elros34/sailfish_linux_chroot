@@ -25,9 +25,7 @@ copy_configs() {
             echo $opt
             ;;
         "xfce4")
-            sed -i "s!UBU_CHROOT_PATH!$(pwd)!" desktop/ubu-xfce.desktop
-            /bin/cp -f desktop/ubu-xfce.desktop /usr/share/applications/
-            update-desktop-database
+            ubu_install_desktop "ubu-xfce.desktop"
             ;;
         "weston")
             cp -f configs/weston.ini $CHROOT_DIR/home/$USER_NAME/.config/
@@ -54,9 +52,10 @@ copy_configs() {
             /bin/cp -r -f libhybris/*.tar.gz $CHROOT_DIR/debs/libhybris/
             ;;
         "chromium-browser")
-            sed -i "s!UBU_CHROOT_PATH!$(pwd)!" desktop/ubu-chromium-browser.desktop
-            /bin/cp -f desktop/ubu-chromium-browser.desktop /usr/share/applications/
-            update-desktop-database 2>&1 | grep -v x-maemo-highlight
+            ubu_install_desktop "ubu-chromium-browser.desktop"
+            if [ "$ON_DEVICE" == "1" ] && [ -f "$HOST_HOME_DIR/.local/share/applications/mimeinfo.cache" ]; then
+                print_info "Dirty hack detected, x-scheme-handler/https will not work correctly!"
+            fi
             ;;
         *)
             print_info "Wrong arg $opt"
