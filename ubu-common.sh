@@ -14,13 +14,17 @@ if [ -z "$HOST_USER" ]; then
 fi
 export HOST_HOME_DIR=/home/$HOST_USER
 
-# Warning: "last login .. pts" message in device but not in ssh (util-linux 2.33+git1)
+# Warning: "Last login .. pts" message in device but not in ssh (util-linux 2.33+git1)
 ubu_host_user_exe() {
     if [ $(whoami) == "root" ]; then
-        su $HOST_USER -l -c "$@"
+        LANG=en_US.utf8 su $HOST_USER -l -c "$@" | grep -v "Last login" || true
     else
         $@
     fi
+}
+
+ubu_host_dconf() {
+    ubu_host_user_exe "dconf read $1"
 }
 
 ubu_ssh() {
@@ -55,8 +59,8 @@ ubu_chroot() {
     fi
 
     if [ "$ON_DEVICE" == "1" ] && [ ! -f .screen_dimensions_set ]; then
-        WIDTH=$(ubu_host_user_exe "dconf read /lipstick/screen/primary/width" | grep -v "pts/" || true)
-        HEIGHT=$(ubu_host_user_exe "dconf read /lipstick/screen/primary/height" | grep -v "pts/" || true)
+        WIDTH="$(ubu_host_dconf /lipstick/screen/primary/width)"
+        HEIGHT="$(ubu_host_dconf /lipstick/screen/primary/height)"
         if [ -n "$WIDTH" ]; then
             uburc_sed "/^export DISPLAY_WIDTH=/s|=.*|=$WIDTH|"
             uburc_sed "/^export DISPLAY_HEIGHT=/s|=.*|=$HEIGHT|"
@@ -67,10 +71,10 @@ ubu_chroot() {
     # hw keyboard
     if [ "$ON_DEVICE" == "1" ] && [ "$SYNC_XKEYBOARD" == "1" ] && [ -d $CHROOT_DIR/usr/share/X11/xkb ] && [ ! -f .xkeyboard_synced ] && [ -f $CHROOT_DIR/usr/share/ubu_chroot/.create_finished ]; then
         /bin/cp -rf /usr/share/X11/xkb $CHROOT_DIR/usr/share/X11/
-        XKB_LAYOUT=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/layout" | grep -v "pts/" || true)
-        XKB_MODEL=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/model" | grep -v "pts/" || true)
-        XKB_RULES=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/rules" | grep -v "pts/" || true)
-        XKB_OPTIONS=$(ubu_host_user_exe "dconf read /desktop/lipstick-jolla-home/options" | grep -v "pts/" || true)
+        XKB_LAYOUT="$(ubu_host_dconf /desktop/lipstick-jolla-home/layout)"
+        XKB_MODEL="$(ubu_host_dconf /desktop/lipstick-jolla-home/model)"
+        XKB_RULES="$(ubu_host_dconf /desktop/lipstick-jolla-home/rules)"
+        XKB_OPTIONS="$(ubu_host_dconf /desktop/lipstick-jolla-home/options)"
         # default values
         : "${XKB_LAYOUT:=us}"
         : "${XKB_MODEL:=jollasbj}"
