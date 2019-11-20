@@ -17,19 +17,28 @@ export HOST_HOME_DIR=/home/$HOST_USER
 # Warning: "Last login .. pts" message in device but not in ssh (util-linux 2.33+git1)
 ubu_host_user_exe() {
     if [ $(whoami) == "root" ]; then
-        LANG=en_US.utf8 su $HOST_USER -l -c "$@" | grep -v "Last login" || true
+        su $HOST_USER -l -c "$@"
     else
         $@
     fi
 }
 
 ubu_host_dconf() {
-    ubu_host_user_exe "dconf read $1"
+    LANG=C su $HOST_USER -l -c "dconf read $1" | grep -v "Last login" || true
 }
 
 ubu_ssh() {
-    ubu_host_user_exe "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost $@"
+    if [ $# -gt 0 ]; then
+        ubu_host_user_exe "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost $(printf '%q ' $@)"
+    else
+        ubu_host_user_exe "ssh -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost $@"
+    fi
 }
+
+ubu_ssh_tty() {
+    ubu_host_user_exe "ssh -t -p 2228 -o StrictHostKeyChecking=no $USER_NAME@localhost $(printf '%q ' $@)"
+}
+
 
 ubu_chroot() {
     rsync -a $(readlink -f /etc/resolv.conf) $CHROOT_DIR/etc/
@@ -47,7 +56,6 @@ ubu_chroot() {
         ubu_host_user_exe "ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa"
     fi
 
-    #TODO remove duplicates
     if ! grep -q "$(cat $HOST_HOME_DIR/.ssh/id_rsa.pub)" $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys ; then
         cat $HOST_HOME_DIR/.ssh/id_rsa.pub >> $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys
     fi
@@ -82,8 +90,10 @@ ubu_chroot() {
         SETXKBMAP="setxkbmap -layout $XKB_LAYOUT -rules $XKB_RULES -model $XKB_MODEL -option $XKB_OPTIONS"
         sed -i "/^Exec=/s|=.*|=$SETXKBMAP|" configs/setxkbmap.desktop
         mkdir -p $CHROOT_DIR/home/$USER_NAME/.config/autostart/
+        # FIXME
         print_info "set xkeyboard config in ~/.config/autostart/setxkbmap.desktop"
         /bin/cp -f configs/setxkbmap.desktop $CHROOT_DIR/home/$USER_NAME/.config/autostart/   
+        chown -R 100000:100000 $CHROOT_DIR/home/$USER_NAME/.config/autostart/
         touch .xkeyboard_synced
     fi
 
@@ -159,7 +169,6 @@ ubu_cleanup_procs() {
     fuser -kv --mount --ismountpoint $CHROOT_DIR || true
 }
 
-# TODO losetup
 ubu_umount() {
     umount $CHROOT_DIR/media/sdcard/*  || true
     rmdir $CHROOT_DIR/media/sdcard/* || true
@@ -172,7 +181,11 @@ ubu_umount() {
             umount -R $dir || true
         fi
     done
-    umount -dR $CHROOT_DIR || true
+
+    if mountpoint -q $CHROOT_DIR; then
+        fuser -kv --mount --ismountpoint $CHROOT_DIR || true
+        umount -dR $CHROOT_DIR || true
+    fi
 }
 
 # Clean up
@@ -186,10 +199,11 @@ ubu_cleanup() {
     if [ "$1" == "force" ]; then
         ubu_cleanup_procs
         ubu_umount
+        sleep 1
         CNT="$(fuser -v --ismountpoint $CHROOT_DIR 2>/dev/null | wc -w)"
         if [ $CNT -gt 0 ]; then
             ubu_cleanup_procs
-            print_info "$CHROT_DIR busy!\nDo you want to force unmount (y/N)?"
+            print_info "$CHROOT_DIR busy!\nDo you want to force unmount (y/N)?"
             read yn
             if [ "$yn" == "y" ]; then
                 ubu_umount force

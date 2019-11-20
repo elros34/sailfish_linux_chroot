@@ -42,6 +42,7 @@ e2fsck -yf $CHROOT_IMG
 mkdir -p $CHROOT_DIR
 ubu_mount_img
 touch $CHROOT_DIR/.nomedia
+ln -fs $CHROOT_DIR ubuntu
 
 if [[ "$(uname -r)" == "3.0"* ]]; then
     TARGET_URL=$TARGET_URL2
@@ -85,6 +86,7 @@ ln -sf /system/vendor $CHROOT_DIR/vendor
 mkdir -p $CHROOT_DIR/home/$USER_NAME/.ssh/
 touch $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys
 chmod 0600 $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys
+ubu_host_user_exe "ssh-keygen -R [localhost]:2228" || true
 
 ubu_mount
 ubu_chroot /usr/share/ubu_chroot/create.sh

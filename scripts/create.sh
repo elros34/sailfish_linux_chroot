@@ -31,7 +31,7 @@ chown $USER_NAME:$USER_NAME /run/user/100000
 
 apt update
 apt upgrade -y
-apt install -y vim dialog locales command-not-found kbd bash-completion sed dbus-x11 apt-file psmisc sudo openssh-server apt-utils unionfs-fuse bc rsync
+apt install -y vim dialog locales command-not-found kbd bash-completion sed dbus-x11 apt-file psmisc sudo openssh-server apt-utils unionfs-fuse bc rsync pcregrep
 apt-file update
 usermod -aG sudo $USER_NAME
 dpkg-reconfigure locales

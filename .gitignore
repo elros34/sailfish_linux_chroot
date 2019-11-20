@@ -1,3 +1,4 @@
 ubuntu*.tar.gz
 ubuntu*.ext*
 desktop/*.desktop
+.*

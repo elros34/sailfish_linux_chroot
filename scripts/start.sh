@@ -11,13 +11,6 @@ if [ $(whoami) == "root" ]; then
     exit 1
 fi
 
-echo "arguments: $@"
-
-if [ $# -eq 0 ];then
-    print_info "supported compositors: kwin, weston, qxcompositor, xfce4, chromium"
-    exit 1
-fi
-
 start_xwayland() {
     export WAYLAND_DISPLAY=../../display/wayland-ubu-1
     if [ -f /tmp/.X0-lock ]; then
@@ -42,18 +35,23 @@ elif [ "$1" == "weston" ]; then
 elif [ "$1" == "xfce4" ] || [ "$1" == "xfce" ]; then
     start_xwayland
     startxfce4
-elif [ "$1" == "qxcompositor" ]; then
+elif [ "$1" == "xwayland" ]; then
+    shift
     start_xwayland
+    $@ &
+    exec bash
 elif [ "$1" == "chromium" ] || [ "$1" == "chromium-browser" ]; then #only for hw keyboard devices
     shift
     start_xwayland
     #matchbox-window-manager -use_titlebar no &
     H="$(bc <<< $DISPLAY_HEIGHT/$CHROMIUM_SCALE)"
     W="$(bc <<< $DISPLAY_WIDTH/$CHROMIUM_SCALE)"
+    # FIXME
+    nohup sh -c "sleep 6; $(pcregrep -o1 'Exec=(.*)' ~/.config/autostart/setxkbmap.desktop)" > /dev/null &
     chromium-browser --force-device-scale-factor=$CHROMIUM_SCALE --window-size=$H,$W --window-position=0,0 $@
     #TODO: onboard --layout=Phone, autoshow/hide for hw keyboard less devices
 else
-    print_info "supported compositors: kwin, weston, qxcompositor"
+    print_info "supported arguments: kwin, weston, xfce4, xwayland"
     $@
 fi
 

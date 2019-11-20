@@ -5,7 +5,7 @@ source /usr/share/ubu_chroot/ubu-variables.sh
 eval $TRACE_CMD
 
 if [ $# -eq 0 ]; then
-    echo "supported arguments: kwin, lxde, weston, qxcompositor, glibc, chromium-browser"
+    print_info "supported arguments: kwin, lxde, weston, qxcompositor, glibc, chromium-browser"
     exit 1
 fi
 
@@ -35,7 +35,7 @@ for opt in $@; do
         ;;
     "qxcompositor")
         # For dependecies
-        apt install -y xwayland xsel
+        apt install -y xwayland xsel libegl1
         mkdir -p /usr/local/share/X11/xkb/rules
         ln -fs /usr/share/X11/xkb/rules/evdev /usr/local/share/X11/xkb/rules/
         ln -fs /usr/bin/xkbcomp /usr/local/bin/

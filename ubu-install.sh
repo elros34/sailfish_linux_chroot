@@ -48,7 +48,6 @@ copy_configs() {
             ;;
         "libhybris")
             mkdir -p $CHROOT_DIR/debs/libhybris
-            #/bin/cp -r -f libhybris/*.deb $CHROOT_DIR/debs/libhybris/
             /bin/cp -r -f libhybris/*.tar.gz $CHROOT_DIR/debs/libhybris/libhybris-upstream.tar.gz
             ;;
         "chromium-browser")

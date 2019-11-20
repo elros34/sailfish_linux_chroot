@@ -14,7 +14,7 @@ else
        exit
     fi
 
-    invoker --type=generic fingerterm -e "echo -e '\n=== ubu $1 ===\n'; devel-su ./ubu-start.sh $1 $2; exec bash" 
+    invoker --type=generic fingerterm -e "echo -e '\n=== ubu $1 ===\n'; devel-su ./ubu-start.sh $(printf '%q ' "$@"); exec bash" 
 fi
 
 
