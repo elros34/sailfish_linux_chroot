@@ -50,7 +50,7 @@ for opt in $@; do
         apt install -y libwayland-client0 libwayland-server0 libegl1 libgles2
         cd /debs/libhybris
         tar --numeric-owner -xzf libhybris-upstream.tar.gz -C /
-        update-alternatives --set arm-linux-gnueabihf_egl_conf /usr/lib/arm-linux-gnueabihf/libhybris-egl/ld.so.conf 
+        update-alternatives --set arm-linux-gnueabihf_egl_conf /usr/lib/arm-linux-gnueabihf/libhybris-egl/ld.so.conf || true
         echo -e "# libhybris\n/usr/lib/arm-linux-gnueabihf/libhybris-egl" > /etc/ld.so.conf.d/01-libhybris.conf
         ldconfig
         ;;
