@@ -38,7 +38,7 @@ if [ -z "$(ubu_ssh_pid)" ]; then # first start
         if [ "$1" == "qxcompositor" ]; then # just open shell
             ./ubu-chroot.sh
         else
-            ./ubu-chroot.sh su $USER_NAME -l "/usr/share/ubu_chroot/start.sh $@"
+            ./ubu-chroot.sh sudo --login --user=$USER_NAME "/usr/share/ubu_chroot/start.sh $@"
         fi
     fi
 else # chroot ready, ssh to it
