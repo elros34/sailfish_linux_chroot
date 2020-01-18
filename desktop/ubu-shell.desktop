@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Categories=Ubuntu;
-Icon=icon-launcher-shell
+Icon=ubu-shell
 Exec=fingerterm -e 'echo -e "\n=== ubu chroot ===\n";cd UBU_CHROOT_PATH;./desktop/ubu-exec.sh ubu-shell'
 Name=Ubu shell
 # X-Nemo-Single-Instance is ignored by lipstick launcher, patch is needed
