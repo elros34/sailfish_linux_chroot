@@ -3,6 +3,11 @@ set -e
 source ubu-common.sh
 eval $TRACE_CMD
 
+if [ "$(df -TP . | awk '/dev/{print $2}')" == "vfat" ]; then
+    print_info "Using fat partition for bash scripts is probably bad idea"
+    sleep 3
+fi
+
 if [ $(whoami) != "root" ]; then
     print_info "run me as root!"
     exit 1
@@ -79,9 +84,7 @@ mkdir -p $CHROOT_DIR/run/display
 mkdir -p $CHROOT_DIR/media/sdcard
 mkdir -p $CHROOT_DIR/run/dbus # /var/run -> /run
 mkdir -p $CHROOT_DIR/var/lib/dbus
-mkdir -p $CHROOT_DIR/system
 mkdir -p $CHROOT_DIR/parentroot
-ln -sf /system/vendor $CHROOT_DIR/vendor
 
 mkdir -p $CHROOT_DIR/home/$USER_NAME/.ssh/
 touch $CHROOT_DIR/home/$USER_NAME/.ssh/authorized_keys

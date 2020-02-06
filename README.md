@@ -48,6 +48,7 @@ Change TRACE_CMD in ubu-variables.sh to "set -x"
 
  - [Preflex](https://talk.maemo.org/showthread.php?t=98882) for idea and code inspiration
  - [NotKit](https://github.com/notkit) for help with qxcompositor and libhybris use in kwin/weston
+ - [eLtMosen](https://github.com/eLtMosen) for Sailfish OS style icons
 
 ### Contributing
 

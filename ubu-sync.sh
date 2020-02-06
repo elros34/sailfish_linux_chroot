@@ -16,7 +16,8 @@ if [ $# -gt 0 ]; then
         /bin/rm -f .screen_dimensions_set
         ubu_host_user_exe "ssh-keygen -R [localhost]:2228" || true
     else
-        print_info "supported arguments: --all, -a"
+        print_msg "Usage: $0 [OPTION]"
+        print_msg "Options: \n  --all, -a   sync also xkeyboard, screen dimensions and known_hosts"
         exit 1
     fi
 fi

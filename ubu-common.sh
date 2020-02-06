@@ -105,9 +105,7 @@ ubu_chroot() {
 }
 
 ubu_mount() {
-    if [ ! -d $CHROOT_DIR ]; then
-        mkdir $CHROOT_DIR
-    fi
+    [ ! -d $CHROOT_DIR ] && mkdir $CHROOT_DIR
     mount --bind /dev $CHROOT_DIR/dev
     mount --bind -o mode=620 /dev/pts $CHROOT_DIR/dev/pts
     mount --bind /dev/shm $CHROOT_DIR/dev/shm
@@ -122,7 +120,18 @@ ubu_mount() {
         mount --bind /run/display $CHROOT_DIR/run/display
 
         # libhybris
-        mount --bind --make-slave --read-only /system $CHROOT_DIR/parentroot/system
+        if [ -d /system ]; then
+            mkdir -p $CHROOT_DIR/system
+            mount --bind --make-slave --read-only /system $CHROOT_DIR/parentroot/system
+            if [ -L /vendor ]; then
+                [ -d $CHROOT_DIR/vendor ] && rmdir $CHROOT_DIR/vendor
+                ln -sf /parentroot/system/vendor $CHROOT_DIR/vendor
+            elif [ -d /vendor ]; then
+                [ -L $CHROOT_DIR/vendor ] && unlink $CHROOT_DIR/vendor
+                mkdir -p $CHROOT_DIR/vendor
+                mount --bind --make-slave --read-only /vendor $CHROOT_DIR/parentroot/vendor
+            fi
+        fi
 
         # audio muted by default
         if [ "$ENABLE_AUDIO" == "1" ] && [ -d $CHROOT_DIR/run/user/100000 ]; then
@@ -245,7 +254,7 @@ ubu_mount_img() {
 }
 
 ubu_ssh_pid() {
-    pgrep -u root -x -f '/usr/sbin/sshd -p 2228'
+    pgrep -u root -f '/usr/sbin/sshd -p 2228'
 }
 
 ubu_qxcompositor_pid() {
@@ -258,8 +267,13 @@ uburc_sed() {
 }
 
 ubu_install_desktop() {
+    ICON="$(echo $1 | sed 's|desktop$|png|')"
+    cd desktop
+    find -name "$ICON" | cut -c3- | xargs -I ICON_PATH /bin/cp -f ICON_PATH /usr/share/ICON_PATH
+    cd -
     sed "s|UBU_CHROOT_PATH|$(pwd)|g" "desktop/$1" > "/usr/share/applications/$1"
     update-desktop-database 2>&1 | grep -v x-maemo-highlight || true
 }
+
 
 

@@ -4,7 +4,7 @@ source ubu-common.sh
 eval $TRACE_CMD
 
 if [ $# -eq 0 ]; then
-    print_info "supported arguments: xfce4, chromium, qxcompositor, xwayland [application]"
+    print_msg "Usage: $0 (xfce4 | chromium | qxcompositor | xwayland [application])"
     exit 1
 fi
 

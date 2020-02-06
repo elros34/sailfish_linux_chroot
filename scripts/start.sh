@@ -51,7 +51,7 @@ elif [ "$1" == "chromium" ] || [ "$1" == "chromium-browser" ]; then #only for hw
     chromium-browser --force-device-scale-factor=$CHROMIUM_SCALE --window-size=$H,$W --window-position=0,0 $@
     #TODO: onboard --layout=Phone, autoshow/hide for hw keyboard less devices
 else
-    print_info "supported arguments: kwin, weston, xfce4, xwayland"
+    print_msg "Usage: $0 (kwin | weston | xfce4 | xwayland [application])"
     $@
 fi
 

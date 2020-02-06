@@ -9,7 +9,7 @@ if [ $(whoami) != "root" ]; then
 fi
 
 if [ $# -eq 0 ]; then
-    print_info "supported arguments: kwin, lxde, xfce4, weston, qxcompositor, glibc (for 3.0.0 kernel), libhybris, chromium-browser"
+    print_msg "Usage: $0 (kwin | lxde | xfce4 | weston | qxcompositor | glibc (for 3.0.0 kernel) | libhybris | chromium-browser)"
     exit 1
 fi
 
@@ -34,21 +34,26 @@ copy_configs() {
         "qxcompositor")
             if [ $ON_DEVICE -eq 1 ]; then
                 pkcon install -y qxcompositor || true
-                print_info "https://build.merproject.org/package/show/home:elros34:sailfishapps/qxcompositor"
+                if [ ! -x /usr/bin/qxcompositor ]; then 
+                    print_info "QXCompositor could not be installed: https://build.merproject.org/package/show/home:elros34:sailfishapps/qxcompositor"
+                    exit 1
+                fi
             fi
             mkdir -p $CHROOT_DIR/usr/local/bin/
-            cp xwayland/Xwayland $CHROOT_DIR/usr/local/bin/
+            install -m 755 -o root xwayland/Xwayland $CHROOT_DIR/usr/local/bin/
             uburc_sed "s|display/wayland-0|display/wayland-ubu-1|"
             mkdir -p $CHROOT_DIR/home/$USER_NAME/.config/autostart/
             /bin/cp -f configs/xhost.desktop $CHROOT_DIR/home/$USER_NAME/.config/autostart/
             ;;
         "glibc")
             mkdir -p $CHROOT_DIR/debs/glibc
-            /bin/cp -r -f glibc/*.deb $CHROOT_DIR/debs/glibc/
+            /bin/rm -f $CHROOT_DIR/debs/glibc/*.deb
+            /bin/cp -f glibc/*.deb $CHROOT_DIR/debs/glibc/
             ;;
         "libhybris")
             mkdir -p $CHROOT_DIR/debs/libhybris
-            /bin/cp -r -f libhybris/*.tar.gz $CHROOT_DIR/debs/libhybris/libhybris-upstream.tar.gz
+            /bin/rm -f $CHROOT_DIR/debs/libhybris/*.tar.gz
+            /bin/cp -f libhybris/*.tar.gz $CHROOT_DIR/debs/libhybris/
             ;;
         "chromium-browser")
             ubu_install_desktop "ubu-chromium-browser.desktop"

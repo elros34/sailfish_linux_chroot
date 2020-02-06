@@ -5,7 +5,7 @@ source /usr/share/ubu_chroot/ubu-variables.sh
 eval $TRACE_CMD
 
 if [ $# -eq 0 ]; then
-    print_info "supported arguments: kwin, lxde, weston, qxcompositor, glibc, chromium-browser"
+    print_msg "Usage: $0 (kwin | lxde | weston | qxcompositor | glibc | chromium-browser)"
     exit 1
 fi
 
@@ -26,9 +26,9 @@ for opt in $@; do
         update-alternatives --set x-terminal-emulator /usr/bin/xfce4-terminal.wrapper
 
         print_info "Tips for xfce:"
-        echo "Increase dpi in 'Settings Manager/Appearance/Fonts/DPI'"
-        echo "Select Default-hdpi theme in 'Settings Manager/Window Manager/Style/Theme'"
-        echo -e "Disable compositing in 'Settings Manager/Window Manager Tweaks/Compositor'\n"
+        print_msg "Increase dpi in 'Settings Manager/Appearance/Fonts/DPI'"
+        print_msg "Select Default-hdpi theme in 'Settings Manager/Window Manager/Style/Theme'"
+        print_msg "Disable compositing in 'Settings Manager/Window Manager Tweaks/Compositor'\n"
         ;;
     "weston")
         apt install -y weston
@@ -49,7 +49,7 @@ for opt in $@; do
     "libhybris")
         apt install -y libwayland-client0 libwayland-server0 libegl1 libgles2
         cd /debs/libhybris
-        tar --numeric-owner -xzf libhybris-upstream.tar.gz -C /
+        tar --numeric-owner -xzf libhybris*.tar.gz -C /
         update-alternatives --set arm-linux-gnueabihf_egl_conf /usr/lib/arm-linux-gnueabihf/libhybris-egl/ld.so.conf || true
         echo -e "# libhybris\n/usr/lib/arm-linux-gnueabihf/libhybris-egl" > /etc/ld.so.conf.d/01-libhybris.conf
         ldconfig
