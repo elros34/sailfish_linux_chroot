@@ -2,7 +2,7 @@
 Type=Application
 Categories=Ubuntu;
 X-Nemo-Application-Type=no-invoker
-Icon=icon-launcher-shell
+Icon=ubu-xfce
 Exec=bash -c "cd UBU_CHROOT_PATH; ./desktop/ubu-exec.sh xfce4"
 Name=Ubu Xfce4
 # X-Nemo-Single-Instance is ignored by lipstick launcher, patch is needed
