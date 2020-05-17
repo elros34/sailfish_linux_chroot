@@ -1,5 +1,8 @@
 # Copyright
 
+### Scripts
+They are based on Preflex work: https://talk.maemo.org/showthread.php?t=98882 released probably under [GNU General Public License v3]
+
 ### Ubuntu
 Ubuntu is a registered trademark of Canonical Ltd.
 The use of the "Circle of Friends" (CoF) part of the Ubuntu Logo owned by Canonical Ltd. does not suggest endorsement by Canonical Ltd.
