@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Categories=Ubuntu;
+Icon=ubu-shell
+Exec=fingerterm -e 'echo -e "\n=== ubu chroot ===\n";cd SFCHROOT_PATH;./desktop/ubu-exec.sh shell'
+Name=Ubu shell
+X-Nemo-Single-Instance=no
+Terminal=false
+

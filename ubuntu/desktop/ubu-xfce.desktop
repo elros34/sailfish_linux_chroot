@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Categories=Ubuntu;
+X-Nemo-Application-Type=no-invoker
+Icon=ubu-xfce
+Exec=bash -c "cd SFCHROOT_PATH; ./desktop/ubu-exec.sh xfce4"
+Name=Ubu Xfce4
+X-Nemo-Single-Instance=no
+Terminal=false
+

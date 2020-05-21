@@ -1,4 +1,4 @@
-ubuntu*.tar.gz
-ubuntu*.ext*
-desktop/*.desktop
+*.tar.gz
+*.tar.7z
+*.ext*
 .*

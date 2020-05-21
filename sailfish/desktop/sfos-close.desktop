@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Icon=icon-launcher-shell
+Exec=fingerterm -e 'echo -e "\n=== sfos close ===\n";cd SFCHROOT_PATH;devel-su ./close.sh;exec bash'
+Name=Sfos Close
+X-Nemo-Single-Instance=no
+Terminal=false
+
