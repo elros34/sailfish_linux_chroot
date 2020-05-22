@@ -1,0 +1,23 @@
+# Do not edit in chroot, copied from sailfish_linux_chroot
+
+# sfchroot variables
+#export $(dbus-launch)
+trap 'source "$HOME/.bash_logout"' EXIT
+export TERM=xterm-256color
+export XDG_RUNTIME_DIR=/run/user/100000
+export WAYLAND_DISPLAY=../../display/wayland-0
+export EGL_PLATFORM=wayland
+export EGL_DRIVER=egl_gallium
+export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+export QT_QPA_PLATFORM=wayland
+export QT_IM_MODULE=Maliit
+export QT_WAYLAND_FORCE_DPI=96
+export DISPLAY=:0
+export EDITOR=/usr/bin/vim
+export DISPLAY_WIDTH=1080
+export DISPLAY_HEIGHT=1920
+export PS1="[\u@sfos-chroot: \w]# "
+
+CMD_FILE=/dev/shm/sfchroot-sfos-user-cmd
+[ $(id -u) -ne 0 ] && [ -x $CMD_FILE ] && source $CMD_FILE && rm -f $CMD_FILE || true
+

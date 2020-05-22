@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Categories=Ubuntu;
+Icon=ubu-close
+Exec=fingerterm -e 'echo -e "\n=== ubu close ===\n";cd SFCHROOT_PATH;devel-su ./close.sh;exec bash'
+Name=Ubu Close
+X-Nemo-Single-Instance=no
+Terminal=false
+

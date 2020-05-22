@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Icon=icon-launcher-shell
+Exec=fingerterm -e 'echo -e "\n=== sfos chroot ===\n";cd SFCHROOT_PATH;./desktop/sfos-exec.sh shell'
+Name=Sfos shell
+X-Nemo-Single-Instance=no
+Terminal=false
