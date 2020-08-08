@@ -17,13 +17,9 @@ start_xwayland() {
         print_info "Xwayland already running"
     else
         Xwayland -nolisten tcp &
-        i=10
-        while [ $i -gt 0 ]; do
-            if [ -f /tmp/.X0-lock ]; then
-                break
-            fi
+        for i in {1..10}; do
+            [ -f /tmp/.X0-lock ] && break
             sleep 1
-            ((i--))
         done
     fi
 }
@@ -43,12 +39,19 @@ elif [ "$1" == "xwayland" ]; then
 elif [ "$1" == "chromium" ] || [ "$1" == "chromium-browser" ]; then #only for hw keyboard devices
     shift
     start_xwayland
-    #matchbox-window-manager -use_titlebar no &
-    H="$(bc <<< $DISPLAY_HEIGHT/$CHROMIUM_SCALE)"
-    W="$(bc <<< $DISPLAY_WIDTH/$CHROMIUM_SCALE)"
+    if [ "$QXCOMPOSITOR_PORTRAIT" == "1" ]; then
+        # chromium ignores small width value?
+        matchbox-window-manager -use_titlebar no &
+        W="$(bc <<< $DISPLAY_WIDTH/$CHROMIUM_SCALE)"
+        H="$(bc <<< $DISPLAY_HEIGHT/$CHROMIUM_SCALE)"
+        [ "$CHROMIUM_MATCHBOX_KEYBOARD" == "1" ] && matchbox-keyboard &
+    else
+        W="$(bc <<< $DISPLAY_HEIGHT/$CHROMIUM_SCALE)"
+        H="$(bc <<< $DISPLAY_WIDTH/$CHROMIUM_SCALE)"
+    fi
     # FIXME
     nohup sh -c "sleep 6; $(pcregrep -o1 'Exec=(.*)' ~/.config/autostart/setxkbmap.desktop)" > /dev/null &
-    chromium-browser --force-device-scale-factor=$CHROMIUM_SCALE --window-size=$H,$W --window-position=0,0 $@
+    chromium-browser --force-device-scale-factor=$CHROMIUM_SCALE --window-size=$W,$H --window-position=0,0 $@ || true
     #TODO: onboard --layout=Phone, autoshow/hide for hw keyboard less devices
 else
     print_msg "Usage: $0 (kwin | weston | xfce4 | xwayland [application])"

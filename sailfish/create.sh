@@ -7,9 +7,7 @@ eval $TRACE_CMD
 source ../common/create.sh
 
 sfchroot_createsh
-
-sed "s|SFCHROOT_PATH|$PWD|g" sfoschroot.sh > /usr/local/bin/sfoschroot.sh
-chmod a+x /usr/local/bin/sfoschroot.sh
+sfchroot_createsh_install_helper
 
 print_info "Image created"
 

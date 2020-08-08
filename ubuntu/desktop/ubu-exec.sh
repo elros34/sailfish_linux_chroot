@@ -10,7 +10,5 @@ else
     ./start.sh $@
     [ $? -ne 10 ] && exit
 
-    invoker --type=generic fingerterm -e "echo -e '\n=== ubu $1 ===\n'; devel-su ./start.sh $(printf '%q ' "$@"); exec bash" 
+    qdevel-su --title="Root required to start" --description="$1" ./start.sh "$@"
 fi
-
-

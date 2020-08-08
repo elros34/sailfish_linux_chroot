@@ -29,6 +29,9 @@ sfchroot_createsh_img_and_extract() {
         print_info "run me as root!"
         exit 1
     fi
+ 
+    [ -z "$(which rsync)" ] && sfchroot_pkcon install -y rsync
+    [ -z "$(which sudo)" ] && sfchroot_pkcon install -y sudo
     
     # Never mount /dev twice
     if [ $(mount | grep $CHROOT_DIR | wc -l) -gt 5 ]; then
@@ -59,18 +62,23 @@ sfchroot_createsh_img_and_extract() {
 
     print_info "Creating image..."
     dd if=/dev/zero bs=1 count=0 seek=$IMG_SIZE of=$CHROOT_IMG
-    mkfs.ext4 -O ^has_journal,^metadata_csum $CHROOT_IMG
+    chown $HOST_USER:$HOST_USER $CHROOT_IMG
+    mkfs.ext4 -O ^has_journal,^metadata_csum,^64bit $CHROOT_IMG
     e2fsck -yf $CHROOT_IMG
     mkdir -p $CHROOT_DIR
+    echo "$CHROOT_DIR" > .copied
+    chown $HOST_USER:$HOST_USER .copied
+    
     sfchroot_mount_img
     touch $CHROOT_DIR/.nomedia
     touch $CHROOT_DIR/.chroot
     ln -fs $CHROOT_DIR $DISTRO
+    chown $HOST_USER:$HOST_USER $DISTRO
 
     if [[ "$(uname -r)" == "3.0"* ]]; then
         TARGET_URL=$TARGET_URL2
     else
-        print_info "Use kernel 3.0 compatible tarball? [y/N]"
+        print_info "Your kernel version is $(uname -r). Do you want to use kernel 3.0 compatible tarball? [y/N]"
         read yn
         if [ "$yn" == "y" ]; then
             TARGET_URL=$TARGET_URL2
@@ -99,7 +107,6 @@ sfchroot_createsh_img_and_extract() {
 
     ARCH=$(uname -m)
     if [[ $ARCH == "x86"* ]]; then
-        #pkcon install -y qemu-user-static || [ $? -eq 4 ] && true
         sfchroot_pkcon install -y qemu-user-static 
         cp /usr/bin/qemu-arm-static $CHROOT_DIR/usr/bin/
     fi
@@ -126,7 +133,7 @@ sfchroot_createsh_prepare_ssh() {
 
 sfchroot_createsh_chroot() {
     sfchroot_mount
-    sfchroot_chroot /usr/share/sfchroot/create.sh
+    sfchroot_prepare_and_chroot /usr/share/sfchroot/create.sh
     # test connection and update known_hosts
     sfchroot_chroot /usr/share/sfchroot/chroot.sh true
     sfchroot_host_user_exe "ssh -p $SSH_PORT -o StrictHostKeyChecking=no $USER_NAME@localhost true" || true
@@ -140,6 +147,16 @@ sfchroot_createsh_install_desktops() {
     fi
 }
 
+sfchroot_createsh_install_qdevel-su() {
+    [ "$ON_DEVICE" == "0" ] && return 
+    if [ -z "$(which qdevel-su)" ]; then
+        sfchroot_pkcon install -y qdevel-su
+        if [ -z "$(which qdevel-su)" ] ; then
+            sfchroot_add_repo_and_install qdevel-su "http://repo.merproject.org/obs/home:/elros34:/sailfishapps"
+        fi
+    fi
+}
+
 sfchroot_createsh() {
     sfchroot_createsh_img_and_extract
     sfchroot_createsh_prepare_dirs
@@ -147,6 +164,14 @@ sfchroot_createsh() {
     sfchroot_createsh_chroot
     sfchroot_createsh_install_desktops
 }
+
+sfchroot_createsh_install_helper() {
+    shPath=/usr/local/bin/"$DISTRO_PREFIX"chroot.sh
+    sed "s|SFCHROOT_PATH|$PWD|g" "$DISTRO_PREFIX"chroot.sh > $shPath
+    echo $shPath >> .copied
+    chmod a+x $shPath
+}
+
 
 
 

@@ -5,6 +5,7 @@ eval $TRACE_CMD
 
 export PS1="[\u@sfos-chroot: \w]# "
 
+echo "Password in chroot"
 passwd $USER_NAME
 
 # Make network connection works if CONFIG_ANDROID_PARANOID_NETWORK is enabled
@@ -15,6 +16,8 @@ su $USER_NAME -c "mkdir -p /home/$USER_NAME/.config/pulse"
 echo 'source ~/.'"$DISTRO_PREFIX"'rc' >> /home/$USER_NAME/.bashrc
 echo '[ -n "$DBUS_SESSION_BUS_PID" ] && kill "$DBUS_SESSION_BUS_PID" || true' >> /home/$USER_NAME/.bash_logout
 echo 'export PS1="[\u@sfos-chroot: \w]# "' >> /root/.bashrc
+echo 'CD_FILE=/dev/shm/sfchroot-sfos-cd' >> /root/.bashrc 
+echo '[ -x $CD_FILE ] && source $CD_FILE && rm -f $CD_FILE || true' >> /root/.bashrc 
 mkdir -p /run/user/100000
 chmod 700 /run/user/100000
 chown $USER_NAME:$USER_NAME /run/user/100000

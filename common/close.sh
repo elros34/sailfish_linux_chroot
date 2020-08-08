@@ -2,10 +2,10 @@
 source ./common.sh
 eval $TRACE_CMD
 
+
 CHROOT_DIR=${1:-"$CHROOT_DIR"}
-    
-MOUNTS=$(mount | grep $CHROOT_DIR | wc -l)
-if [ $MOUNTS -eq 0 ]; then
+
+if ! mountpoint -q $CHROOT_DIR; then
     print_info "$CHROOT_DIR not mounted"
     exit 0
 fi

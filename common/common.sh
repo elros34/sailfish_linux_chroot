@@ -49,9 +49,20 @@ sfchroot_pkcon() {
     pkcon "$@" || [ $? -eq 4 ] && true
 }
 
+#warning: avoid double nested calls
 sfchroot_ssh() {
     if [ $# -gt 0 ]; then
-        sfchroot_host_user_exe "ssh -p $SSH_PORT -o StrictHostKeyChecking=no $USER_NAME@localhost $(printf '%q ' $@)"
+        if [[ "$1" == "/usr/share/sfchroot/start.sh"* ]]; then
+            remote_cmd="$@"
+        else
+            remote_cmd=". ~/.${DISTRO_PREFIX}rc; $@"
+        fi
+        
+        if [ $(whoami) == "root" ]; then
+            sudo --login --user=$HOST_USER -- ssh -p $SSH_PORT -o StrictHostKeyChecking=no $USER_NAME@localhost "$remote_cmd"
+        else
+            ssh -p $SSH_PORT -o StrictHostKeyChecking=no $USER_NAME@localhost "$remote_cmd"
+        fi
     else
         sfchroot_host_user_exe "ssh -p $SSH_PORT -o StrictHostKeyChecking=no $USER_NAME@localhost"
     fi
@@ -62,7 +73,9 @@ sfchroot_ssh_tty() {
 }
 
 
-sfchroot_chroot() {
+sfchroot_prepare_and_chroot() {
+    [ -f .closing ] && print_info "still closing!" && exit 1
+    
     rsync -a $(readlink -f /etc/resolv.conf) $CHROOT_DIR/etc/
     rsync -a scripts/*.sh $CHROOT_DIR/usr/share/sfchroot/
     rsync -a variables.sh $CHROOT_DIR/usr/share/sfchroot/
@@ -87,6 +100,15 @@ sfchroot_chroot() {
         chown root:root $CHROOT_DIR
         chmod 755 $CHROOT_DIR
     fi
+    
+    if [ "$ON_DEVICE" == "0" ]; then
+        # use same uid and gid as in host
+        userInfo="$(getent passwd $HOST_USER)"
+        uid=$(echo $userInfo | cut -d: -f3)
+        gid=$(echo $userInfo | cut -d: -f4)
+        chroot $CHROOT_DIR usermod -u $uid $USER_NAME 2>/dev/null
+        chroot $CHROOT_DIR groupmod -g $uid $USER_NAME
+    fi
 
     if [ "$ON_DEVICE" == "1" ] && [ ! -f .screen_dimensions_set ]; then
         WIDTH="$(sfchroot_host_dconf /lipstick/screen/primary/width)"
@@ -110,32 +132,61 @@ sfchroot_chroot() {
         : "${XKB_MODEL:=jollasbj}"
         : "${XKB_RULES:=evdev}"
         SETXKBMAP="setxkbmap -layout $XKB_LAYOUT -rules $XKB_RULES -model $XKB_MODEL -option $XKB_OPTIONS"
-        sed -i "/^Exec=/s|=.*|=$SETXKBMAP|" configs/setxkbmap.desktop
         mkdir -p $CHROOT_DIR/home/$USER_NAME/.config/autostart/
-        # FIXME
         print_info "set xkeyboard config in ~/.config/autostart/setxkbmap.desktop"
-        /bin/cp -f configs/setxkbmap.desktop $CHROOT_DIR/home/$USER_NAME/.config/autostart/   
+        # FIXME
+        sed "/^Exec=/s|=.*|=$SETXKBMAP|" configs/setxkbmap.desktop > $CHROOT_DIR/home/$USER_NAME/.config/autostart/setxkbmap.desktop
         chown -R 100000:100000 $CHROOT_DIR/home/$USER_NAME/.config/autostart/
         touch .xkeyboard_synced
     fi
+    
+    sfchroot_chroot "$@"
+}
 
+sfchroot_chroot() {
+    [ -f .closing ] && print_info "still closing!" && exit 1
+    
     print_info "chrooting $CHROOT_DIR"
-    chroot $CHROOT_DIR /usr/bin/env -i \
-        HOME=/root TERM="$TERM" PS1='[\u@'$DISTRO_PREFIX'-chroot: \w]# ' \
-        PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games \
-        /bin/bash --login $@
+    
+    CHROOT_PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+    
+    if [ $# -eq 1 ] && [ "$1" == "/usr/share/sfchroot/chroot.sh" ]; then
+       chroot $CHROOT_DIR /usr/bin/env -i \
+            HOME=/root TERM="$TERM" PS1='[\u@'$DISTRO_PREFIX'-chroot: \w]# ' \
+            PATH=$CHROOT_PATH \
+            /bin/bash --login /usr/share/sfchroot/chroot.sh
+    else
+        if [ $# -gt 0 ]; then
+            chroot $CHROOT_DIR /usr/bin/env -i \
+                HOME=/root TERM="$TERM" PS1='[\u@'$DISTRO_PREFIX'-chroot: \w]# ' \
+                PATH=$CHROOT_PATH \
+                /bin/bash --login -c "$(printf '%q ' $@)"
+        else
+            chroot $CHROOT_DIR /usr/bin/env -i \
+                HOME=/root TERM="$TERM" PS1='[\u@'$DISTRO_PREFIX'-chroot: \w]# ' \
+                PATH=$CHROOT_PATH \
+                /bin/bash --login
+        fi
+    fi
 }
 
 sfchroot_mount() {
+    [ -f .closing ] && print_info "still closing!" && exit 1
+    
     [ ! -d $CHROOT_DIR ] && mkdir $CHROOT_DIR
     mount --bind /dev $CHROOT_DIR/dev
-    [ "$ON_DEVICE" == "1" ] && mount --bind -o mode=620 /dev/pts $CHROOT_DIR/dev/pts
+    mount --bind -o mode=620 /dev/pts $CHROOT_DIR/dev/pts
     mount --bind /dev/shm $CHROOT_DIR/dev/shm
     mount --bind /sys $CHROOT_DIR/sys
     mount --bind /proc $CHROOT_DIR/proc
     mount --bind --make-slave --read-only / $CHROOT_DIR/parentroot
     mount --bind --make-slave $HOST_HOME_DIR $CHROOT_DIR/home/host-user
     mount --bind /tmp $CHROOT_DIR/tmp
+
+    if [ -d pkgs/ ]; then
+        mkdir -p $CHROOT_DIR/pkgs
+        mount --bind --make-slave pkgs/ $CHROOT_DIR/pkgs
+    fi
 
     if [ "$ON_DEVICE" == "1" ]; then
         # wayland
@@ -166,43 +217,58 @@ sfchroot_mount() {
         fi
         # If mounted image is stored in sdcard then --rbind triggers some kind of bug in kernel or umount tool so it's impossible to release loopX device.
         #mount --rbind --make-slave /run/media/$HOST_USER $CHROOT_DIR/media/sdcard || true
-        for dir in $(ls /run/media/$HOST_USER); do
-            if mountpoint --quiet "/run/media/$HOST_USER/$dir" ; then
-                mkdir -p $CHROOT_DIR/media/sdcard/$dir
-                mount --bind --make-slave "/run/media/$HOST_USER/$dir" $CHROOT_DIR/media/sdcard/$dir || true
-            fi
-        done
+        if [ -d /run/media/$HOST_USER ]; then
+            for dir in $(ls /run/media/$HOST_USER); do
+                if mountpoint --quiet "/run/media/$HOST_USER/$dir" ; then
+                    mkdir -p $CHROOT_DIR/media/sdcard/$dir
+                    mount --bind --make-slave "/run/media/$HOST_USER/$dir" $CHROOT_DIR/media/sdcard/$dir || true
+                fi
+            done
+        fi
     fi
 }
 
 # /var/run -> /run
 sfchroot_cleanup_procs() {
     if [ -f $CHROOT_DIR/run/sshd.pid ]; then
-        kill "$(cat $CHROOT_DIR/run/sshd.pid)" || true
-        /bin/rm -f $CHROOT_DIR/run/sshd.pid
+        sfchroot_kill "$(cat $CHROOT_DIR/run/sshd.pid)" || true
+        # even with -f (force) it can still fails with "No such file or directory" error (busybox v1.31.0)
+        /bin/rm -f $CHROOT_DIR/run/sshd.pid || true
     fi
 
     if [ -f $CHROOT_DIR/run/dbus/pid ]; then
-        kill "$(cat $CHROOT_DIR/run/dbus/pid)" || true
-        /bin/rm -f $CHROOT_DIR/run/dbus/pid
+        sfchroot_kill "$(cat $CHROOT_DIR/run/dbus/pid)"
+        /bin/rm -f $CHROOT_DIR/run/dbus/pid || true
     fi
 
+    # kill easyshell otherwise fuser will show lipstick as process which belongs to chroot
+    sfchroot_kill "$(sfchroot_easyshell_pid)" || true
+
     if [ -f $CHROOT_DIR/run/display/wayland-$DISTRO_PREFIX-1.lock ]; then
-        kill "$(sfchroot_qxcompositor_pid)" || true
-        /bin/rm -f $CHROOT_DIR/run/display/wayland-$DISTRO_PREFIX-1.lock
+        sfchroot_kill "$(sfchroot_qxcompositor_pid)" || true
+        /bin/rm -f $CHROOT_DIR/run/display/wayland-$DISTRO_PREFIX-1.lock || true
     fi
 
     if [ -f $CHROOT_DIR/tmp/.X0-lock ]; then
-        /bin/rm -f $CHROOT_DIR/tmp/.X0-lock
+        /bin/rm -f $CHROOT_DIR/tmp/.X0-lock || true
     fi
-
+    
+    sleep 1
+    
+    if fuser -v --mount --ismountpoint $CHROOT_DIR 2>&1 | grep -q lipstick; then
+        print_info "Don't kill lipstick.."
+        return 1
+    fi
+    
     print_info "killing:"
     fuser -kv --mount --ismountpoint $CHROOT_DIR || true
 }
 
 sfchroot_umount() {
-    umount $CHROOT_DIR/media/sdcard/*  || true
-    rmdir $CHROOT_DIR/media/sdcard/* || true
+    if [ -d $CHROOT_DIR/media/sdcard/ ] && [ "$(ls $CHROOT_DIR/media/sdcard/ | wc -w)" -gt 0 ]; then
+        umount $CHROOT_DIR/media/sdcard/*  || true
+        rmdir $CHROOT_DIR/media/sdcard/* || true
+    fi
     umount -dR $CHROOT_DIR || true
     for dir in $(mount | grep $CHROOT_DIR | cut -f 3 -d" " | sort -r); do
         print_info "unmounting $dir"
@@ -225,6 +291,9 @@ sfchroot_cleanup() {
         print_info "$CHROOT_DIR not mounted"
         return 0
     fi
+    print_info "closing begin"
+    touch .closing
+    
     print_info "Active processes: "
     fuser -v --mount --ismountpoint $CHROOT_DIR 2>&1 | grep -ve USER -ve '^$' || true
     if [ "$1" == "force" ]; then
@@ -268,7 +337,10 @@ sfchroot_cleanup() {
 
     if [ -n "$(losetup --associated $CHROOT_IMG)" ]; then
         print_info "$CHROOT_IMG still in use!"
-    fi     
+    fi
+    
+    rm -f .closing
+    print_info "closing end"
 }
 
 sfchroot_mount_img() {
@@ -283,6 +355,20 @@ sfchroot_qxcompositor_pid() {
     pgrep -u $HOST_USER -f "qxcompositor --wayland-socket-name ../../display/wayland-$DISTRO_PREFIX-1"
 }
 
+sfchroot_easyshell_pid() {
+    pgrep -f "easyshell --wayland-socket-name ../../display/wayland-$DISTRO_PREFIX-1" || pgrep -f "easyshell" 
+}
+
+sfchroot_kill() {
+    [ -z "$1" ] && return
+    
+    kill "$1" || true
+    for i in {1..5}; do
+        ps -p "$1" -o comm= 1>/dev/null && continue || return 0
+    done
+    kill -9 "$1" || true
+}
+
 sfchrootrc_sed() {
     sed -i "$@" scripts/dot"$DISTRO_PREFIX"rc
     sed -i "$@" $CHROOT_DIR/home/$USER_NAME/."$DISTRO_PREFIX"rc
@@ -293,6 +379,7 @@ sfchroot_install_desktop() {
     
     if [ -f "$HOST_HOME_DIR/.local/share/applications/mimeinfo.cache" ]; then
         print_info "Dirty hack detected, x-scheme-handler/https will not work correctly!"
+        sleep 3
     fi
             
     ICON="$(echo $1 | sed 's|desktop$|png|')"
@@ -301,15 +388,27 @@ sfchroot_install_desktop() {
     for ICON_PATH in $ICONS; do
         mkdir -p $(dirname /usr/share/$ICON_PATH)
         /bin/cp -f $ICON_PATH /usr/share/$ICON_PATH
+        echo "/usr/share/$ICON_PATH" >> .copied
     done
     cd -
     
     INSTALL_PATH=/usr/local/share/applications/
     grep -q '^MimeType' "desktop/$1" && INSTALL_PATH=/usr/share/applications
     sed "s|SFCHROOT_PATH|$PWD|g" "desktop/$1" > "$INSTALL_PATH/$1"
+    echo "$INSTALL_PATH/$1" >> .copied
     print_info "Installing $1 in $INSTALL_PATH"
     update-desktop-database 2>&1 | grep -v x-maemo-highlight || true
 }
 
-
+# package, url
+sfchroot_add_repo_and_install() {
+    CURRENT_RELEASE="$(ssu re | pcregrep -o1 '([\d\.]+)')"
+    print_info "$1 could not be installed. Do you want to add temp repo: $2/sailfishos_$CURRENT_RELEASE? [Y/n]"
+    read yn
+    [ "$yn" == "n" ] && exit 1
+    ssu ar "$DISTRO_PREFIX"_"$1"_tmp $2/sailfishos_$CURRENT_RELEASE/armv7hl/
+    pkcon refresh
+    sfchroot_pkcon install -y $1
+    ssu rr "$DISTRO_PREFIX"_"$1"_tmp
+}
 

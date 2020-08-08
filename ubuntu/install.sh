@@ -10,7 +10,7 @@ if [ $(whoami) != "root" ]; then
 fi
 
 if [ $# -eq 0 ]; then
-    print_msg "Usage: $0 (kwin | lxde | xfce4 | weston | qxcompositor | glibc (for 3.0.0 kernel) | libhybris | chromium-browser)"
+    print_msg "Usage: $0 (kwin | lxde | xfce4 | weston | qxcompositor | glibc (for 3.0.0 kernel) | libhybris | chromium-browser | qtwayland)"
     exit 1
 fi
 
@@ -22,9 +22,6 @@ copy_configs() {
             cp -f configs/kwinrc $CHROOT_DIR/home/$USER_NAME/.config/
             sfchrootrc_sed "s|display/wayland-$DISTRO_PREFIX-1|display/wayland-0|"
             ;;
-        "lxde")
-            echo $opt
-            ;;
         "xfce4")
             sfchroot_install_desktop "$DISTRO_PREFIX-xfce.desktop"
             ;;
@@ -34,10 +31,11 @@ copy_configs() {
             ;;
         "qxcompositor")
             if [ $ON_DEVICE -eq 1 ]; then
-                sfchroot_pkcon install -y qxcompositor
-                if [ ! -x /usr/bin/qxcompositor ]; then 
-                    print_info "QXCompositor could not be installed: https://build.merproject.org/package/show/home:elros34:sailfishapps/qxcompositor"
-                    exit 1
+                if [ -z "$(which qxcompositor)" ] ; then
+                    sfchroot_pkcon install -y qxcompositor
+                    if [ -z "$(which qxcompositor)" ] ; then
+                        sfchroot_add_repo_and_install qxcompositor "http://repo.merproject.org/obs/home:/elros34:/sailfishapps"
+                    fi
                 fi
             fi
             mkdir -p $CHROOT_DIR/usr/local/bin/
@@ -46,18 +44,11 @@ copy_configs() {
             mkdir -p $CHROOT_DIR/home/$USER_NAME/.config/autostart/
             /bin/cp -f configs/xhost.desktop $CHROOT_DIR/home/$USER_NAME/.config/autostart/
             ;;
-        "glibc")
-            mkdir -p $CHROOT_DIR/debs/glibc
-            /bin/rm -f $CHROOT_DIR/debs/glibc/*.deb
-            /bin/cp -f glibc/*.deb $CHROOT_DIR/debs/glibc/
-            ;;
-        "libhybris")
-            mkdir -p $CHROOT_DIR/debs/libhybris
-            /bin/rm -f $CHROOT_DIR/debs/libhybris/*.tar.gz
-            /bin/cp -f libhybris/*.tar.gz $CHROOT_DIR/debs/libhybris/
-            ;;
         "chromium-browser")
             sfchroot_install_desktop "$DISTRO_PREFIX-chromium-browser.desktop"
+            ;;
+        "glibc"|"libhybris"|"qtwayland"|"lxde")
+            echo $opt
             ;;
         *)
             print_info "Wrong arg $opt"
@@ -83,7 +74,7 @@ fi
 sfchroot_mount_img
 sfchroot_mount
 copy_configs $@
-sfchroot_chroot /usr/share/sfchroot/install.sh $@
+sfchroot_prepare_and_chroot /usr/share/sfchroot/install.sh $@
 sfchroot_cleanup
 
 

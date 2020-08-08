@@ -25,7 +25,7 @@ fi
 
 MOUNTS=$(mount | grep $CHROOT_DIR | wc -l)
 if [ $MOUNTS -gt 5 ]; then
-    sfchroot_chroot /usr/share/sfchroot/chroot.sh true
+    sfchroot_prepare_and_chroot /usr/share/sfchroot/chroot.sh true
 else
     if [ $MOUNTS -gt 0 ]; then
         print_info "$CHROOT_DIR partially mounted"
@@ -33,7 +33,7 @@ else
     fi
     sfchroot_mount_img
     sfchroot_mount
-    sfchroot_chroot /usr/share/sfchroot/chroot.sh true
+    sfchroot_prepare_and_chroot /usr/share/sfchroot/chroot.sh true
 fi
 
 print_info "Synchronization completed"

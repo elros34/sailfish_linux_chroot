@@ -5,7 +5,7 @@ source /usr/share/sfchroot/variables.sh
 eval $TRACE_CMD
 
 if [ $# -eq 0 ]; then
-    print_msg "Usage: $0 (kwin | lxde | weston | qxcompositor | glibc | chromium-browser)"
+    print_msg "Usage: $0 (kwin | lxde | weston | qxcompositor | glibc | chromium-browser | qtwayland)"
     exit 1
 fi
 
@@ -43,12 +43,12 @@ for opt in $@; do
     "glibc")
         echo "libc6 hold" | dpkg --set-selections
         echo "libc-bin hold" | dpkg --set-selections
-        cd /debs/glibc
+        cd /pkgs/glibc
         dpkg -i libc6_2*.deb libc6-armel_2*.deb libc-bin_2*.deb locales_2*.deb multiarch-support_2*.deb
         ;;
     "libhybris")
         apt install -y libwayland-client0 libwayland-server0 libegl1 libgles2
-        cd /debs/libhybris
+        cd /pkgs/libhybris
         tar --numeric-owner -xzf libhybris*.tar.gz -C /
         update-alternatives --set arm-linux-gnueabihf_egl_conf /usr/lib/arm-linux-gnueabihf/libhybris-egl/ld.so.conf || true
         echo -e "# libhybris\n/usr/lib/arm-linux-gnueabihf/libhybris-egl" > /etc/ld.so.conf.d/01-libhybris.conf
@@ -56,7 +56,14 @@ for opt in $@; do
         ;;
     "chromium-browser")
         apt install -y chromium-browser
+        [ "$CHROMIUM_MATCHBOX_KEYBOARD" == "1" ] && apt install -y matchbox-keyboard
         update-alternatives --set x-www-browser /usr/bin/chromium-browser
+        ;;
+    "qtwayland")
+        apt install qtwayland5
+        # visibility quirk
+        echo "libqt5waylandclient5" | dpkg --set-selections
+        dpkg -i /pkgs/qtwayland/libqt5waylandclient5_*.deb
         ;;
     *)
         print_info "Wrong arg $opt"

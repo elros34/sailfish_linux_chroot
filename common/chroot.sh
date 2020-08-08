@@ -5,48 +5,65 @@ source ./variables.sh
 source ./common.sh
 eval $TRACE_CMD
 
-_sfchroot_chroot() {
-    if [ $# -gt 0 ]; then
-        sfchroot_chroot /usr/share/sfchroot/chroot.sh $@
-    else
-        sfchroot_chroot /usr/share/sfchroot/chroot.sh su $USER_NAME -l
-    fi    
-}
+[ -f .closing ] && print_info "still closing!" && exit 1
 
-CMD_FILE="/dev/shm/sfchroot-$DISTRO_PREFIX-user-cmd"
-/bin/rm -f $CMD_FILE
-if [[ "$1" == "--open-dir="* ]]; then
-    DIR="$(echo $1 | cut -d= -f2)"
-    shift
-    if [[ $DIR == "$HOST_HOME_DIR"* ]]; then
-        DIR=$(echo $DIR | sed "s|$HOST_HOME_DIR|/home/host-user|")
-    fi
-    echo "cd $DIR" > $CMD_FILE
-    chmod a+rwx $CMD_FILE
-    chown 100000:100000 $CMD_FILE
-fi
+# dirty hack to change working directory in chroot
+CD_FILE="/dev/shm/sfchroot-$DISTRO_PREFIX-cd"
+/bin/rm -f $CD_FILE
 
-if [ -z "$(sfchroot_ssh_pid)" ]; then # first start
+AS_ROOT=0
+ARGS=""
+while [ $# -gt 0 ]; do
+    case $1 in
+        "--open-dir")
+            DIR=$2
+            shift 2
+            if [[ $DIR == "$HOST_HOME_DIR"* ]]; then
+                DIR=$(echo $DIR | sed "s|$HOST_HOME_DIR|/home/host-user|")
+            fi
+            echo "cd $DIR" > $CD_FILE
+            chmod a+rwx $CD_FILE
+            chown 100000:100000 $CD_FILE
+        ;;
+        "--as-root")
+            shift
+            [ "$(whoami)" == "root" ] && AS_ROOT=1
+        ;;
+        *)
+            break
+        ;;
+    esac
+done
+
+[ -z "$ARGS" ] && ARGS=$(echo "$@" | sed "s|$HOST_HOME_DIR|/home/host-user|g")
+
+if [ -z "$(sfchroot_ssh_pid)" ] || [ "$AS_ROOT" -eq 1 ]; then # first start
     if [ $(whoami) != "root" ]; then
         print_info "chroot not ready, run me as root"
         exit 10
     else # root
         MOUNTS=$(mount | grep $CHROOT_DIR | wc -l)
-        if [ $MOUNTS -gt 5 ]; then
-            print_info "$CHROOT_DIR already mounted"
-            _sfchroot_chroot $@
-            sfchroot_cleanup
-        elif [ $MOUNTS -gt 0 ]; then
-            print_info "$CHROOT_DIR partially mounted"
-            ./close.sh
+        if [ "$AS_ROOT" -eq 1 ] && [ $MOUNTS -gt 5 ]; then 
+            # already mounted, just chroot with arguments
+            sfchroot_chroot /usr/share/sfchroot/chroot.sh $ARGS
         else
-            sfchroot_mount_img
-            sfchroot_mount
-            _sfchroot_chroot $@
-            sfchroot_cleanup          
+            if [ $MOUNTS -gt 0 ]; then
+                print_info "$CHROOT_DIR partially mounted or ssh server is not started"
+                ./close.sh
+            else
+                sfchroot_mount_img
+                sfchroot_mount
+                if [ "$AS_ROOT" -eq 1 ]; then
+                    sfchroot_prepare_and_chroot /usr/share/sfchroot/chroot.sh $ARGS
+                else
+                    sfchroot_prepare_and_chroot /usr/share/sfchroot/chroot.sh true
+                    sfchroot_ssh $ARGS
+                fi
+                sfchroot_cleanup          
+            fi
         fi
     fi
 else # chroot ready, ssh to it
-    sfchroot_ssh $@
+    sfchroot_ssh $ARGS
 fi
 

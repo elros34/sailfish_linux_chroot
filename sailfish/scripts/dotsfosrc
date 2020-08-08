@@ -18,6 +18,6 @@ export DISPLAY_WIDTH=1080
 export DISPLAY_HEIGHT=1920
 export PS1="[\u@sfos-chroot: \w]# "
 
-CMD_FILE=/dev/shm/sfchroot-sfos-user-cmd
-[ $(id -u) -ne 0 ] && [ -x $CMD_FILE ] && source $CMD_FILE && rm -f $CMD_FILE || true
+CD_FILE=/dev/shm/sfchroot-sfos-cd
+[ -x $CD_FILE ] && source $CD_FILE && rm -f $CD_FILE || true
 

@@ -4,6 +4,8 @@ cd $(dirname $(readlink -f $0))
 source ./common.sh
 eval $TRACE_CMD
 
+[ -f .closing ] && print_info "still closing!" && exit 1
+
 if [ $# -eq 0 ]; then
     print_msg "Usage: $0 (xfce4 | chromium | qxcompositor | xwayland [application])"
     exit 1
@@ -19,9 +21,11 @@ run_qxcompositor() {
                 return 0
             fi
 
-            sfchroot_host_user_exe "invoker -s --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-$DISTRO_PREFIX-1 -u $USER_NAME -p $SSH_PORT" &
+            [ "$QXCOMPOSITOR_PORTRAIT" == "1" ] && args="-o portrait"
+            sfchroot_host_user_exe "invoker -s --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-$DISTRO_PREFIX-1 -u $USER_NAME -p $SSH_PORT $args" &
 
-            while [ ! -f /run/display/wayland-$DISTRO_PREFIX-1.lock ]; do
+            for i in {1..10}; do
+                [ -f /run/display/wayland-$DISTRO_PREFIX-1.lock ] && break
                 sleep 1
             done
         fi
