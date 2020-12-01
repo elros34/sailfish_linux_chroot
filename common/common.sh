@@ -45,8 +45,15 @@ sfchroot_host_dconf() {
 }
 
 sfchroot_pkcon() {
-    # pkcon returns 4 if it can't find package or package is alread installed (sic!)
-    pkcon "$@" || [ $? -eq 4 ] && true
+    # pkcon returns exit code when package is already installed:
+    # ubuntu 20.04: 4 (same as when it can't find package)
+    # sailfish 3.3.0.x: 0
+    # sailfish 3.4.0.x: 7
+    # Sounds like a fun
+    if [ "$ON_DEVICE" == "1" ]; then
+        pkcon "$@" || [ $? -eq 7 ] && true
+    else
+        pkcon "$@" || [ $? -eq 4 ] && true
 }
 
 #warning: avoid double nested calls
@@ -101,7 +108,7 @@ sfchroot_prepare_and_chroot() {
         chmod 755 $CHROOT_DIR
     fi
     
-    if [ "$ON_DEVICE" == "0" ]; then
+    if [ -f $CHROOT_DIR/usr/share/sfchroot/.create_finished ] && [ "$ON_DEVICE" == "0" ]; then
         # use same uid and gid as in host
         userInfo="$(getent passwd $HOST_USER)"
         uid=$(echo $userInfo | cut -d: -f3)
@@ -138,6 +145,12 @@ sfchroot_prepare_and_chroot() {
         sed "/^Exec=/s|=.*|=$SETXKBMAP|" configs/setxkbmap.desktop > $CHROOT_DIR/home/$USER_NAME/.config/autostart/setxkbmap.desktop
         chown -R 100000:100000 $CHROOT_DIR/home/$USER_NAME/.config/autostart/
         touch .xkeyboard_synced
+    fi
+    
+    # qt5-qttools-qdbus
+    if [ "$ON_DEVICE" == "1" ] && [ "$SAILFISH_KEYBOARD" == "1" ]; then
+        maliitAddress="$(qdbus org.maliit.server /org/maliit/server/address org.freedesktop.DBus.Properties.Get org.maliit.Server.Address address)"
+        sfchrootrc_sed "/^export MALIIT_SERVER_ADDRESS=/s|=.*|=$maliitAddress|"
     fi
     
     sfchroot_chroot "$@"
@@ -241,10 +254,10 @@ sfchroot_cleanup_procs() {
         /bin/rm -f $CHROOT_DIR/run/dbus/pid || true
     fi
 
-    # kill easyshell otherwise fuser will show lipstick as process which belongs to chroot
-    sfchroot_kill "$(sfchroot_easyshell_pid)" || true
-
+    
     if [ -f $CHROOT_DIR/run/display/wayland-$DISTRO_PREFIX-1.lock ]; then
+        # kill easyshell otherwise fuser will show lipstick as process which belongs to chroot
+        sfchroot_kill "$(sfchroot_easyshell_pid)" || true
         sfchroot_kill "$(sfchroot_qxcompositor_pid)" || true
         /bin/rm -f $CHROOT_DIR/run/display/wayland-$DISTRO_PREFIX-1.lock || true
     fi
@@ -305,7 +318,7 @@ sfchroot_cleanup() {
             sfchroot_cleanup_procs
             print_info "$CHROOT_DIR busy!\nDo you want to force unmount (y/N)?"
             read yn
-            if [ "$yn" == "y" ]; then
+            if [[ "$yn" == [yY] ]]; then
                 sfchroot_umount force
             else
                 sfchroot_umount
@@ -356,7 +369,7 @@ sfchroot_qxcompositor_pid() {
 }
 
 sfchroot_easyshell_pid() {
-    pgrep -f "easyshell --wayland-socket-name ../../display/wayland-$DISTRO_PREFIX-1" || pgrep -f "easyshell" 
+    pgrep -f "easyshell --wayland-socket-name ../../display/wayland-$DISTRO_PREFIX-1" || pgrep "easyshell" 
 }
 
 sfchroot_kill() {
@@ -388,24 +401,31 @@ sfchroot_install_desktop() {
     for ICON_PATH in $ICONS; do
         mkdir -p $(dirname /usr/share/$ICON_PATH)
         /bin/cp -f $ICON_PATH /usr/share/$ICON_PATH
-        echo "/usr/share/$ICON_PATH" >> .copied
+        sfchroot_add_to_copied "/usr/share/$ICON_PATH" ../.copied
     done
     cd -
     
     INSTALL_PATH=/usr/local/share/applications/
     grep -q '^MimeType' "desktop/$1" && INSTALL_PATH=/usr/share/applications
     sed "s|SFCHROOT_PATH|$PWD|g" "desktop/$1" > "$INSTALL_PATH/$1"
-    echo "$INSTALL_PATH/$1" >> .copied
+    sfchroot_add_to_copied "$INSTALL_PATH/$1"
     print_info "Installing $1 in $INSTALL_PATH"
     update-desktop-database 2>&1 | grep -v x-maemo-highlight || true
+}
+
+sfchroot_add_to_copied() {
+    COPIED_FILE="${2:-.copied}"
+    if ! grep -q "^$1$" $COPIED_FILE; then
+        echo "$1" >> $COPIED_FILE
+    fi
 }
 
 # package, url
 sfchroot_add_repo_and_install() {
     CURRENT_RELEASE="$(ssu re | pcregrep -o1 '([\d\.]+)')"
-    print_info "$1 could not be installed. Do you want to add temp repo: $2/sailfishos_$CURRENT_RELEASE? [Y/n]"
+    print_info "$1 could not be installed. Do you want to add temp repo: $2/sailfishos_$CURRENT_RELEASE and try again? [Y/n]"
     read yn
-    [ "$yn" == "n" ] && exit 1
+    [[ "$yn" == [nN] ]] && exit 1
     ssu ar "$DISTRO_PREFIX"_"$1"_tmp $2/sailfishos_$CURRENT_RELEASE/armv7hl/
     pkcon refresh
     sfchroot_pkcon install -y $1

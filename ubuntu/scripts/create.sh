@@ -6,8 +6,8 @@ eval $TRACE_CMD
 export PS1="[\u@$DISTRO_PREFIX-chroot: \w]# "
 
 useradd $USER_NAME --uid 100000 -U -m --shell /bin/bash
-chown $USER_NAME:$USER_NAME /home/$USER_NAME
 groupmod -g 100000 $USER_NAME
+chown $USER_NAME:$USER_NAME /home/$USER_NAME
 echo "Password in chroot"
 passwd $USER_NAME
 dpkg-reconfigure bash
@@ -19,15 +19,13 @@ usermod -g inet _apt
 
 su $USER_NAME -c "mkdir -p /home/$USER_NAME/.config/pulse"
 # pgrep --uid 100000 dbus-daemon
-cp /etc/skel/.bashrc /home/$USER_NAME/
-cp /etc/skel/.profile /home/$USER_NAME/
+install -o $USER_NAME -g $USER_NAME /etc/skel/.bashrc /home/$USER_NAME/
+install -o $USER_NAME -g $USER_NAME /etc/skel/.profile /home/$USER_NAME/
 echo 'source ~/.'"$DISTRO_PREFIX"'rc' >> /home/$USER_NAME/.bashrc
 echo '[ -n "$DBUS_SESSION_BUS_PID" ] && kill "$DBUS_SESSION_BUS_PID" || true' >> /home/$USER_NAME/.bash_logout
 echo 'export PS1="[\u@ubu-chroot: \w]# "' >> /root/.bashrc 
 echo 'CD_FILE=/dev/shm/sfchroot-ubu-cd' >> /root/.bashrc 
 echo '[ -x $CD_FILE ] && source $CD_FILE && rm -f $CD_FILE || true' >> /root/.bashrc 
-chown $USER_NAME:$USER_NAME /home/$USER_NAME/.bashrc
-chown $USER_NAME:$USER_NAME /home/$USER_NAME/.profile
 mkdir -p /run/user/100000
 chmod 700 /run/user/100000
 chown $USER_NAME:$USER_NAME /run/user/100000
