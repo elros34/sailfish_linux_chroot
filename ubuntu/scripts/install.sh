@@ -62,7 +62,7 @@ for opt in $@; do
     "qtwayland")
         apt install qtwayland5
         # visibility quirk
-        echo "libqt5waylandclient5" | dpkg --set-selections
+        echo "libqt5waylandclient5 hold" | dpkg --set-selections
         dpkg -i /pkgs/qtwayland/libqt5waylandclient5_*.deb
         ;;
     *)

@@ -8,12 +8,15 @@ while [ $# -gt 0 ]; do
     "--build-dep")
         shift
         [[ $1 == *".spec" ]] && spec_file=$1 && shift || spec_file="$(find . -name *.spec | head -n1)"
-        pkgs=$(pcregrep -o1 "^BuildRequires:[\s\t]*(.*)" "$spec_file")
+        expanded_spec=$(mktemp "$spec_file.tmp.XXX")
+        rpmspec -P $spec_file > $expanded_spec
+        pkgs=$(pcregrep -o1 "^BuildRequires:[\s\t]*(.*)" "$expanded_spec")
         for pkg in $pkgs; do
             # filter out >= 0.0.1
-            pcregrep -q -e "([\d]\.)+\d" -e "[<>=]+" <<< $pkg && continue
+            pcregrep -q -e "([\d]\.)+\d" -e "^\d$" -e "[<>=]+" <<< $pkg && continue
             zypper --non-interactive in $pkg
         done
+        rm -f $expanded_spec
     ;;
     "--build")
         shift

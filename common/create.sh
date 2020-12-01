@@ -43,7 +43,7 @@ sfchroot_createsh_img_and_extract() {
     FREE_SPACE="$(df -h $(dirname $CHROOT_IMG) | tail -n1 | awk '{print $4}')"
     print_info "$FREE_SPACE space available ($IMG_SIZE needed), continue? [Y/n]"
     read yn
-    if [ "$yn" == "n" ]; then
+    if [[ "$yn" == [nN] ]]; then
         ./close.sh
         exit 1
     fi
@@ -51,7 +51,7 @@ sfchroot_createsh_img_and_extract() {
     if [ -f $CHROOT_IMG ]; then
         print_info "$CHROOT_IMG exists, do you want to overwrite it? [y/N]"
         read yn
-        if [ "$yn" == "y" ]; then
+        if [[ "$yn" == [yY] ]]; then
             sfchroot_cleanup
             /bin/rm -f $CHROOT_IMG
         else
@@ -66,7 +66,8 @@ sfchroot_createsh_img_and_extract() {
     mkfs.ext4 -O ^has_journal,^metadata_csum,^64bit $CHROOT_IMG
     e2fsck -yf $CHROOT_IMG
     mkdir -p $CHROOT_DIR
-    echo "$CHROOT_DIR" > .copied
+    touch .copied
+    sfchroot_add_to_copied "$CHROOT_DIR"
     chown $HOST_USER:$HOST_USER .copied
     
     sfchroot_mount_img
@@ -80,7 +81,7 @@ sfchroot_createsh_img_and_extract() {
     else
         print_info "Your kernel version is $(uname -r). Do you want to use kernel 3.0 compatible tarball? [y/N]"
         read yn
-        if [ "$yn" == "y" ]; then
+        if [[ "$yn" == [yY] ]]; then
             TARGET_URL=$TARGET_URL2
         fi 
     fi
@@ -168,7 +169,7 @@ sfchroot_createsh() {
 sfchroot_createsh_install_helper() {
     shPath=/usr/local/bin/"$DISTRO_PREFIX"chroot.sh
     sed "s|SFCHROOT_PATH|$PWD|g" "$DISTRO_PREFIX"chroot.sh > $shPath
-    echo $shPath >> .copied
+    sfchroot_add_to_copied $shPath
     chmod a+x $shPath
 }
 
