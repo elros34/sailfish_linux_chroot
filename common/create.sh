@@ -24,6 +24,19 @@ sfchroot_createsh_img_and_extract() {
         print_info "Using fat partition for bash scripts is probably bad idea"
         sleep 3
     fi
+    
+    if readlink -f /bin/bash | grep -q busybox || \
+       readlink -f "$(which ps)" | grep -q busybox || \
+       readlink -f "$(which fuser)" | grep -q busybox; then
+        print_info "This system use busybox bash/ash, ps or fuser which are not compatible with scipts! Use gnu-bash, procps-ng and psmisc-tools instead."
+        if [ "$ON_DEVICE" == "1" ]; then
+            print_info "Do you want to install recommended packages? It might break your system! [y/N]"
+            read yn
+            [[ "$yn" != [yY] ]] && exit 1
+            zypper install gnu-bash procps-ng psmisc-tools
+        fi
+
+    fi
 
     if [ $(whoami) != "root" ]; then
         print_info "run me as root!"
@@ -40,6 +53,7 @@ sfchroot_createsh_img_and_extract() {
         exit 1
     fi
 
+    CHROOT_IMG=$CHROOT_SRC
     FREE_SPACE="$(df -h $(dirname $CHROOT_IMG) | tail -n1 | awk '{print $4}')"
     print_info "$FREE_SPACE space available ($IMG_SIZE needed), continue? [Y/n]"
     read yn
@@ -62,7 +76,7 @@ sfchroot_createsh_img_and_extract() {
 
     print_info "Creating image..."
     dd if=/dev/zero bs=1 count=0 seek=$IMG_SIZE of=$CHROOT_IMG
-    chown $HOST_USER:$HOST_USER $CHROOT_IMG
+    chown $HOST_USER:$HOST_USER $CHROOT_IMG || true
     mkfs.ext4 -O ^has_journal,^metadata_csum,^64bit $CHROOT_IMG
     e2fsck -yf $CHROOT_IMG
     mkdir -p $CHROOT_DIR

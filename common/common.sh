@@ -31,6 +31,10 @@ if [ -z "$HOST_USER" ]; then
 fi
 export HOST_HOME_DIR=/home/$HOST_USER
 
+export separate_filesystem=1
+[ -d "$CHROOT_SRC" ] && separate_filesystem=0
+[ "$separate_filesystem" == "1" ] && fuser_mnt_opt="--mount"
+
 # Warning: "Last login .. pts" message in device but not in ssh (util-linux 2.33+git1)
 sfchroot_host_user_exe() {
     if [ $(whoami) == "root" ]; then
@@ -45,10 +49,10 @@ sfchroot_host_dconf() {
 }
 
 sfchroot_pkcon() {
-    # pkcon returns exit code when package is already installed:
-    # ubuntu 20.04: 4 (same as when it can't find package)
-    # sailfish 3.3.0.x: 0
-    # sailfish 3.4.0.x: 7
+    # When package is already installed, pkcon's exit code can be:
+    # 4: ubuntu 20.04 (same as when it can't find package)
+    # 0: sailfish 3.3.0.x
+    # 7: sailfish 3.4.0.x
     # Sounds like a fun
     if [ "$ON_DEVICE" == "1" ]; then
         pkcon "$@" || [ $? -eq 7 ] && true
@@ -112,10 +116,10 @@ sfchroot_prepare_and_chroot() {
     if [ -f $CHROOT_DIR/usr/share/sfchroot/.create_finished ] && [ "$ON_DEVICE" == "0" ]; then
         # use same uid and gid as in host
         userInfo="$(getent passwd $HOST_USER)"
-        uid=$(echo $userInfo | cut -d: -f3)
-        gid=$(echo $userInfo | cut -d: -f4)
+        uid=$(cut -d: -f3 <<< $userInfo)
+        gid=$(cut -d: -f4 <<< $userInfo)
         chroot $CHROOT_DIR usermod -u $uid $USER_NAME 2>/dev/null
-        chroot $CHROOT_DIR groupmod -g $uid $USER_NAME
+        chroot $CHROOT_DIR groupmod -g $uid $USER_NAME || true
     fi
 
     if [ "$ON_DEVICE" == "1" ] && [ ! -f .screen_dimensions_set ]; then
@@ -255,13 +259,17 @@ sfchroot_cleanup_procs() {
         /bin/rm -f $CHROOT_DIR/run/dbus/pid || true
     fi
 
-    
     if [ -f $CHROOT_DIR/run/display/wayland-$DISTRO_PREFIX-1.lock ]; then
-        # kill easyshell otherwise fuser will show lipstick as process which belongs to chroot
+        # kill easyshell and Xwayland otherwise fuser will show lipstick as process which belongs to chroot
         sfchroot_kill "$(sfchroot_easyshell_pid)" || true
         sfchroot_kill "$(sfchroot_qxcompositor_pid)" || true
         /bin/rm -f $CHROOT_DIR/run/display/wayland-$DISTRO_PREFIX-1.lock || true
     fi
+    /bin/rm -f $CHROOT_DIR/run/display/wayland-$DISTRO_PREFIX-1 || true
+    
+    # In case easyshell crash, kill Xwayland
+    xwayland_pid=$(fuser -v $fuser_mnt_opt --ismountpoint $CHROOT_DIR 2>&1 | awk '/Xwayland/ {print $2}' || true)
+    sfchroot_kill "$xwayland_pid"
 
     if [ -f $CHROOT_DIR/tmp/.X0-lock ]; then
         /bin/rm -f $CHROOT_DIR/tmp/.X0-lock || true
@@ -269,13 +277,13 @@ sfchroot_cleanup_procs() {
     
     sleep 1
     
-    if fuser -v --mount --ismountpoint $CHROOT_DIR 2>&1 | grep -q lipstick; then
+    if fuser -v $fuser_mnt_opt --ismountpoint $CHROOT_DIR 2>&1 | grep -q lipstick; then
         print_info "Don't kill lipstick.."
         return 1
     fi
     
     print_info "killing:"
-    fuser -kv --mount --ismountpoint $CHROOT_DIR || true
+    fuser -kv $fuser_mnt_opt --ismountpoint $CHROOT_DIR || true
 }
 
 sfchroot_umount() {
@@ -294,7 +302,7 @@ sfchroot_umount() {
     done
 
     if mountpoint -q $CHROOT_DIR; then
-        fuser -kv --mount --ismountpoint $CHROOT_DIR || true
+        fuser -kv $fuser_mnt_opt --ismountpoint $CHROOT_DIR || true
         umount -dR $CHROOT_DIR || true
     fi
 }
@@ -309,7 +317,7 @@ sfchroot_cleanup() {
     touch .closing
     
     print_info "Active processes: "
-    fuser -v --mount --ismountpoint $CHROOT_DIR 2>&1 | grep -ve USER -ve '^$' || true
+    fuser -v $fuser_mnt_opt --ismountpoint $CHROOT_DIR 2>&1 | grep -ve USER -ve '^$' || true
     if [ "$1" == "force" ]; then
         sfchroot_cleanup_procs
         sfchroot_umount
@@ -331,8 +339,9 @@ sfchroot_cleanup() {
         if [ $CNT -gt 1 ]; then
             # mount, unionfs, #dbus-daemon (dbus-launch), sshd, systemd-logind ?
             RES="$(fuser -v --ismountpoint $CHROOT_DIR 2>&1 || true)"
-            if [ $CNT -eq 4 ] && [ -n "$(echo $RES | grep 'unionfs.*systemd-logind')" ] || \
-               [ $CNT -eq 3 ] && [ -n "$(echo $RES | grep unionfs)" ] || \
+            if [ $CNT -eq 5 -a -n "$(grep 'unionfs.*easyshell.*Xwayland' <<< $RES)" ] || \
+               [ $CNT -eq 4 -a -n "$(grep 'unionfs.*systemd-logind' <<< $RES)" ] || \
+               [ $CNT -eq 3 -a -n "$(grep 'unionfs' <<< $RES)" ] || \
                [ $CNT -le 2 ]; then
                 sfchroot_cleanup_procs
                 sfchroot_umount
@@ -349,16 +358,22 @@ sfchroot_cleanup() {
         print_info "Unmount completed"
     fi
 
-    if [ -n "$(losetup --associated $CHROOT_IMG)" ]; then
-        print_info "$CHROOT_IMG still in use!"
+    if [ -f "$CHROOT_SRC" ] && [ -n "$(losetup --associated $CHROOT_SRC)" ]; then
+        print_info "$CHROOT_SRC still in use!"
     fi
     
     rm -f .closing
     print_info "closing end"
+    # TODO notification?
 }
 
 sfchroot_mount_img() {
-    mount -t ext4 -o loop,noatime $CHROOT_IMG $CHROOT_DIR
+    mkdir -p $CHROOT_DIR
+    if [ "$separate_filesystem" == "1" ]; then
+        mount -t ext4 -o loop,noatime $CHROOT_SRC $CHROOT_DIR
+    else
+        mount -o bind,noatime --make-slave $CHROOT_SRC $CHROOT_DIR
+    fi
 }
 
 sfchroot_ssh_pid() {
@@ -396,7 +411,7 @@ sfchroot_install_desktop() {
         sleep 3
     fi
             
-    ICON="$(echo $1 | sed 's|desktop$|png|')"
+    ICON="$(sed 's|desktop$|png|' <<< $1)"
     cd desktop
     ICONS=$(find -name "$ICON" | cut -c3-)
     for ICON_PATH in $ICONS; do

@@ -3,9 +3,9 @@
 export "VARIABLES_SH=1"
 
 export IMG_SIZE=2G
-export TARGET_URL=http://releases.sailfishos.org/sdk/targets/Sailfish_OS-3.4.0.24-Sailfish_SDK_Target-armv7hl.tar.7z
-export TARGET_URL2=https://github.com/elros34/sailfish_linux_chroot/releases/download/v0.4/Sailfish_OS-3.4.0.24-kernel-3.0.0-Sailfish_SDK_Target-armv7hl.tar.7z
-export CHROOT_IMG=sailfish-3.4.0.24-armhf.ext4
+export TARGET_URL=http://releases.sailfishos.org/sdk/targets/Sailfish_OS-4.0.1.48-Sailfish_SDK_Target-armv7hl.tar.7z
+export TARGET_URL2=https://github.com/elros34/sailfish_linux_chroot/releases/download/v0.5/Sailfish_OS-4.0.1.48-kernel-3.0.0-Sailfish_SDK_Target-armv7hl.tar.7z
+export CHROOT_SRC=sailfish-4.0.1.48-armhf.ext4
 export DISTRO=sailfish
 export DISTRO_PREFIX=sfos
 export USER_NAME=nemo
