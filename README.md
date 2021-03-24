@@ -1,10 +1,11 @@
 # sailfish_linux_chroot [Potentially dangerous]
 
 Bunch of scripts to ease creating chrooted ubuntu/sailfish in sailfishos >= 3.3.0.16
+Tested only with gnu-bash, procps-ng and psmisc-tools instead busybox replacements installed by default on sailfish >= 4.0.1.x
 
 ### How to
 
-Clone it to non fat partition. Distro image can be created in any place via CHROOT_IMG in variables.sh
+Clone it to non fat partition. Distro image can be created in any place via CHROOT_SRC in variables.sh
 ```
 git clone --depth=1 https://github.com/elros34/sailfish_linux_chroot.git
 cd sailfish_linux_chroot/"Distro"
@@ -14,7 +15,7 @@ devel-su
 It will create shortcuts in sailfish launcher needed to enter, close chroot and helper scripts sfoschroot.sh/ubuchroot.sh in /usr/local/bin/
 
 ## Ubuntu distro
-Latest working release is 19.04. In later releases weston and qtwayland fail. Applications started with xwayland might still work.
+Latest working release is 19.04. In later releases: 19.10 - 21.04 weston and qtwayland fail (tested only on one device). Additionally, since 19.10 ubuntu use snap for chromium and other packages but snap fails to work in chroot. The remaining applications started with xwayland might still work. 
 
 If you want xfce in landscape mode then make sure you have installed latest [qxcompositor and qdevel-su](https://build.merproject.org/package/show/home:elros34:sailfishapps/qxcompositor), then
 
@@ -43,6 +44,8 @@ Sailfish's pulseaudio mutes other audio sources so use pavucontrol (pulse audio 
  - Disable compositing in 'Settings Manager/Window Manager Tweaks/Compositor'
 
 ## Sailfish distro
+
+Useful for building packages on device without breaking base system.
 
 Install 'BuildRequires' dependencies [optional rpm spec]
 ```

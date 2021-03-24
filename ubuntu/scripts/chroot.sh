@@ -10,7 +10,7 @@ eval $TRACE_CMD
 
 # libhybris
 if [ -d "/parentroot/usr/libexec/droid-hybris/system/" ] && [ -z "$(mount | grep 'unionfs on /system')" ]; then
-    unionfs -o allow_other,nonempty /parentroot/usr/libexec/droid-hybris/system/:/parentroot/system/ /system || true
+    unionfs -o allow_other,nonempty,auto_unmount /parentroot/usr/libexec/droid-hybris/system/:/parentroot/system/ /system || true
 fi
 
 $@

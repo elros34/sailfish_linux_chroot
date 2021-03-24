@@ -19,7 +19,7 @@ while [ $# -gt 0 ]; do
             DIR=$2
             shift 2
             if [[ $DIR == "$HOST_HOME_DIR"* ]]; then
-                DIR=$(echo $DIR | sed "s|$HOST_HOME_DIR|/home/host-user|")
+                DIR=$(sed "s|$HOST_HOME_DIR|/home/host-user|" <<< $DIR)
             fi
             echo "cd $DIR" > $CD_FILE
             chmod a+rwx $CD_FILE
@@ -35,7 +35,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-[ -z "$ARGS" ] && ARGS=$(echo "$@" | sed "s|$HOST_HOME_DIR|/home/host-user|g")
+[ -z "$ARGS" ] && ARGS=$(sed "s|$HOST_HOME_DIR|/home/host-user|g" <<< "$@")
 
 if [ -z "$(sfchroot_ssh_pid)" ] || [ "$AS_ROOT" -eq 1 ]; then # first start
     if [ $(whoami) != "root" ]; then

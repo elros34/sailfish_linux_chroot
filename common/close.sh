@@ -13,7 +13,7 @@ fi
 
 if [ $(whoami) != "root" ]; then
     print_info "run me as root!"
-    exit 1
+    exit 10
 fi
 
 sfchroot_cleanup force

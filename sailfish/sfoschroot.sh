@@ -3,37 +3,49 @@ set -e
 
 export _PWD=$PWD
 cd SFCHROOT_PATH
+ret=0
+
+chroot_sh() {    
+    ./chroot.sh --open-dir $_PWD $@ || ret=$?
+    [ $ret -eq 10 ] && [ "$(whoami)" != "root" ] && qdevel-su --title="Root required to start chroot" ./chroot.sh --open-dir $_PWD $@
+}
 
 if [ $# -eq 0 ]; then
-    ./chroot.sh --open-dir $_PWD
+    chroot_sh $@
 else
     while [ $# -gt 0 ]; do 
         case $1 in
-        "--build-dep")
-            ./chroot.sh --open-dir $_PWD --as-root /usr/share/sfchroot/sfoschroot.sh "$@"
+        "-d" | "--build-dep")
+            chroot_sh --as-root /usr/share/sfchroot/sfoschroot.sh "$@"
             [[ $2 == *".spec" ]] && shift 2 || shift
             ;;
-        "--build")
-            ./chroot.sh --open-dir $_PWD /usr/share/sfchroot/sfoschroot.sh "$@"
+        "-b" | "--build")
+            chroot_sh /usr/share/sfchroot/sfoschroot.sh "$@"
             [[ $2 == *".spec" ]] && shift 2 || shift
             break
             ;;
-        "--close")
+        "-c" | "--close")
             shift
-            ./close.sh
+            ./close.sh || ret=$?
+            [ $ret -eq 10 ] && [ "$(whoami)" != "root" ] && qdevel-su --title="Root required to close chroot" ./close.sh
             break
             ;;
-        "-h"|"--help")
-            echo "Usage: sfoschroot.sh (--help | --build [rpm spec] | --build-dep [rpm spec] | --close) [args]"
+        "-h" | "--help")
+            echo -e "Usage: sfoschroot.sh [options] [args]\n" \
+                    "Options:\n" \
+                    "  --help, -h                   Print help.\n" \
+                    "  --build, -b [rpm spec]       Build rpm package.\n" \
+                    "  --build-dep, -d [rpm spec]   Install build dependencies.\n" \
+                    "  --close, -c                  Close chroot."
             break
             ;;
         "--")
             shift
-            ./chroot.sh --open-dir $_PWD $@
+            chroot_sh $@
             break
             ;;
         *)
-            ./chroot.sh --open-dir $_PWD $@
+            chroot_sh $@
             break
             ;;
         esac

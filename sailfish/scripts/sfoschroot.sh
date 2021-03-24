@@ -5,7 +5,7 @@ eval $TRACE_CMD
 
 while [ $# -gt 0 ]; do 
     case $1 in
-    "--build-dep")
+    "-d" | "--build-dep")
         shift
         [[ $1 == *".spec" ]] && spec_file=$1 && shift || spec_file="$(find . -name *.spec | head -n1)"
         expanded_spec=$(mktemp "$spec_file.tmp.XXX")
@@ -13,12 +13,12 @@ while [ $# -gt 0 ]; do
         pkgs=$(pcregrep -o1 "^BuildRequires:[\s\t]*(.*)" "$expanded_spec")
         for pkg in $pkgs; do
             # filter out >= 0.0.1
-            pcregrep -q -e "([\d]\.)+\d" -e "^\d$" -e "[<>=]+" <<< $pkg && continue
+            pcregrep -q -e "^([\d]\.)+\d" -e "^\d$" -e "[<>=]+" <<< $pkg && continue
             zypper --non-interactive in $pkg
         done
         rm -f $expanded_spec
     ;;
-    "--build")
+    "-b" | "--build")
         shift
         [[ $1 == *".spec" ]] && spec_file=$1 && shift  || spec_file="$(find . -name *.spec | head -n1)"
         mkdir -p $PWD/RPMS/

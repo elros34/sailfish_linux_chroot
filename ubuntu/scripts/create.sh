@@ -31,7 +31,7 @@ chmod 700 /run/user/100000
 chown $USER_NAME:$USER_NAME /run/user/100000
 
 # 19.04 is EOL
-grep -q disco-updates /etc/apt/sources.list && sed -i 's|ports.ubuntu.com/ubuntu-ports|old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+grep -q -e disco-updates -e eoan-updates /etc/apt/sources.list && sed -i 's|ports.ubuntu.com/ubuntu-ports|old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
 apt update
 apt upgrade -y
 apt install -y vim dialog locales command-not-found kbd bash-completion sed dbus-x11 apt-file psmisc sudo openssh-server apt-utils unionfs-fuse bc rsync pcregrep
