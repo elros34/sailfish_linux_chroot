@@ -1,6 +1,7 @@
 # sailfish_linux_chroot [Potentially dangerous]
 
-Bunch of scripts to ease creating chrooted ubuntu/sailfish in sailfishos >= 3.3.0.16
+Bunch of scripts to ease creating chrooted ubuntu/sailfish in sailfishos >= 3.3.0.16.
+
 Tested only with gnu-bash, procps-ng and psmisc-tools instead busybox replacements installed by default on sailfish >= 4.0.1.x
 
 ### How to
