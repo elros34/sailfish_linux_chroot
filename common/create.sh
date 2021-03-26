@@ -52,33 +52,47 @@ sfchroot_createsh_img_and_extract() {
         ./close.sh
         exit 1
     fi
-
-    CHROOT_IMG=$CHROOT_SRC
-    FREE_SPACE="$(df -h $(dirname $CHROOT_IMG) | tail -n1 | awk '{print $4}')"
-    print_info "$FREE_SPACE space available ($IMG_SIZE needed), continue? [Y/n]"
-    read yn
-    if [[ "$yn" == [nN] ]]; then
-        ./close.sh
-        exit 1
-    fi
-
-    if [ -f $CHROOT_IMG ]; then
-        print_info "$CHROOT_IMG exists, do you want to overwrite it? [y/N]"
+    
+    if grep -q '\.' <<< $CHROOT_SRC; then
+        print_info "Using ext4 image $CHROOT_SRC for rootfs. Is that correct? [Y/n]"
         read yn
-        if [[ "$yn" == [yY] ]]; then
-            sfchroot_cleanup
-            /bin/rm -f $CHROOT_IMG
-        else
+        [[ "$yn" == [nN] ]] && exit 1
+        
+        CHROOT_IMG=$CHROOT_SRC
+        FREE_SPACE="$(df -h $(dirname $CHROOT_IMG) | tail -n1 | awk '{print $4}')"
+        print_info "$FREE_SPACE space available ($IMG_SIZE needed), continue? [Y/n]"
+        read yn
+        if [[ "$yn" == [nN] ]]; then
             ./close.sh
             exit 1
         fi
+
+        if [ -f $CHROOT_IMG ]; then
+            print_info "$CHROOT_IMG exists, do you want to overwrite it? [y/N]"
+            read yn
+            if [[ "$yn" == [yY] ]]; then
+                sfchroot_cleanup
+                /bin/rm -f $CHROOT_IMG
+            else
+                ./close.sh
+                exit 1
+            fi
+        fi
+
+        print_info "Creating image..."
+        dd if=/dev/zero bs=1 count=0 seek=$IMG_SIZE of=$CHROOT_IMG
+        chown $HOST_USER:$HOST_USER $CHROOT_IMG || true
+        mkfs.ext4 -O ^has_journal,^metadata_csum,^64bit $CHROOT_IMG
+        e2fsck -yf $CHROOT_IMG
+    else
+        # TODO check whether directory is empty
+        print_info "Using directory: \"$CHROOT_SRC/\" for rootfs. Is that correct? [Y/n]"
+        read yn
+        [[ "$yn" == [nN] ]] && exit 1
+        separate_filesystem=0
+        mkdir -p $CHROOT_SRC
     fi
 
-    print_info "Creating image..."
-    dd if=/dev/zero bs=1 count=0 seek=$IMG_SIZE of=$CHROOT_IMG
-    chown $HOST_USER:$HOST_USER $CHROOT_IMG || true
-    mkfs.ext4 -O ^has_journal,^metadata_csum,^64bit $CHROOT_IMG
-    e2fsck -yf $CHROOT_IMG
     mkdir -p $CHROOT_DIR
     touch .copied
     sfchroot_add_to_copied "$CHROOT_DIR"
