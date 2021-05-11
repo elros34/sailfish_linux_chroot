@@ -31,7 +31,7 @@ else
             break
             ;;
         "-h" | "--help")
-            echo -e "Usage: sfoschroot.sh [options] [args]\n" \
+            echo -e "Usage: $(basename $0) [options] [args]\n" \
                     "Options:\n" \
                     "  --help, -h                   Print help.\n" \
                     "  --build, -b [rpm spec]       Build rpm package.\n" \

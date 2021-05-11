@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Copyright (C) 2017 Preflex
-# Copyright (C) 2017-2020 elros34
+# Copyright (C) 2017-2021 elros34
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

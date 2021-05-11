@@ -15,7 +15,7 @@ else
             break
             ;;
         "-h"|"--help")
-            echo "Usage: ubuchroot.sh (--help | --close) [args]"
+            echo "Usage: $(basename $0) (--help | --close) [args]"
             break
             ;;
         "--")

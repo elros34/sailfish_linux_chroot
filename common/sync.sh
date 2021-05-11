@@ -2,6 +2,8 @@
 set -e
 source ./variables.sh
 source ./common.sh
+# only for install helper function
+source ../common/create.sh
 eval $TRACE_CMD
 
 
@@ -15,9 +17,10 @@ if [ $# -gt 0 ]; then
         /bin/rm -f .xkeyboard_synced
         /bin/rm -f .screen_dimensions_set
         sfchroot_host_user_exe "ssh-keygen -R [localhost]:$SSH_PORT" || true
+        sfchroot_createsh_install_helper
     else
         print_msg "Usage: $0 [OPTION]"
-        print_msg "Options: \n  --all, -a   sync also xkeyboard, screen dimensions and known_hosts"
+        print_msg "Options: \n  --all, -a   sync also xkeyboard, screen dimensions, known_hosts and helper script"
         exit 1
     fi
 fi

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Copyright (C) 2017 Preflex
-# Copyright (C) 2017-2020 elros34
+# Copyright (C) 2017-2021 elros34
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,22 +20,22 @@ set -e
 source ./common.sh
 
 sfchroot_createsh_img_and_extract() {
+    print_info "Due to bug in pkcon which is used in scripts, all your outdated and unrelated packages will be upgraded :O"
+
     if [ "$(df -TP . | awk '/dev/{print $2}')" == "vfat" ]; then
         print_info "Using fat partition for bash scripts is probably bad idea"
         sleep 3
     fi
     
-    if readlink -f /bin/bash | grep -q busybox || \
-       readlink -f "$(which ps)" | grep -q busybox || \
+    if readlink -f "$(which ps)" | grep -q busybox || \
        readlink -f "$(which fuser)" | grep -q busybox; then
-        print_info "This system use busybox bash/ash, ps or fuser which are not compatible with scipts! Use gnu-bash, procps-ng and psmisc-tools instead."
+        print_info "This system use busybox ps or fuser which are not compatible with scipts! Use gnu-bash, procps-ng and psmisc-tools instead."
         if [ "$ON_DEVICE" == "1" ]; then
             print_info "Do you want to install recommended packages? It might break your system! [y/N]"
             read yn
             [[ "$yn" != [yY] ]] && exit 1
-            zypper install gnu-bash procps-ng psmisc-tools
+            zypper install procps-ng psmisc-tools
         fi
-
     fi
 
     if [ $(whoami) != "root" ]; then
@@ -102,7 +102,7 @@ sfchroot_createsh_img_and_extract() {
     touch $CHROOT_DIR/.nomedia
     touch $CHROOT_DIR/.chroot
     ln -fs $CHROOT_DIR $DISTRO
-    chown $HOST_USER:$HOST_USER $DISTRO
+    chown --no-dereference $HOST_USER:$HOST_USER $DISTRO
 
     if [[ "$(uname -r)" == "3.0"* ]]; then
         TARGET_URL=$TARGET_URL2
@@ -196,6 +196,7 @@ sfchroot_createsh() {
 
 sfchroot_createsh_install_helper() {
     shPath=/usr/local/bin/"$DISTRO_PREFIX"chroot.sh
+    [ ! -f "$DISTRO_PREFIX"chroot.sh ] && return 0
     sed "s|SFCHROOT_PATH|$PWD|g" "$DISTRO_PREFIX"chroot.sh > $shPath
     sfchroot_add_to_copied $shPath
     chmod a+x $shPath

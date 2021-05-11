@@ -19,9 +19,15 @@ export SYNC_XKEYBOARD=0 # .xkeyboard_synced
 print_info() {
     echo -e "\n\e[93m=== $1 ===\n\e[0m"
 }
-export -f print_info
 
 print_msg() {
     echo -e "\n\e[93m$1\n\e[0m"
 }
+
+if readlink -f /bin/bash | grep -q busybox; then
+    echo -e "\n--- You are using busybox bash/ash which is not compatible with scripts. Read README.md carefully once again then install gnu-bash and restart shell. ---\n"
+    exit 1
+fi
+
+export -f print_info
 export -f print_msg
