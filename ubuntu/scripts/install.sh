@@ -55,12 +55,12 @@ for opt in $@; do
         ldconfig
         ;;
     "chromium-browser")
-        apt install -y chromium-browser
-        [ "$CHROMIUM_MATCHBOX_KEYBOARD" == "1" ] && apt install -y matchbox-keyboard
+        apt install -y chromium-browser matchbox-window-manager
+        [ "$CHROMIUM_ONBOARD_KEYBOARD" == "1" ] && apt install -y onboard
         update-alternatives --set x-www-browser /usr/bin/chromium-browser
         ;;
     "qtwayland")
-        apt install qtwayland5
+        apt install -y qtwayland5
         # visibility quirk
         echo "libqt5waylandclient5 hold" | dpkg --set-selections
         dpkg -i /pkgs/qtwayland/libqt5waylandclient5_*.deb

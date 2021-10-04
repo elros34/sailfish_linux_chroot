@@ -21,9 +21,8 @@ run_qxcompositor() {
                 return 0
             fi
 
-            [ "$QXCOMPOSITOR_PORTRAIT" == "1" ] && args="-o portrait"
-            sfchroot_host_user_exe "invoker -s --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-$DISTRO_PREFIX-1 -u $USER_NAME -p $SSH_PORT $args" &
-
+            sfchroot_host_user_exe "QT_LOGGING_TO_CONSOLE=0 invoker -s --type=silica-qt5 qxcompositor --wayland-socket-name ../../display/wayland-$DISTRO_PREFIX-1 -u $USER_NAME -p $SSH_PORT --orientation=$QXCOMPOSITOR_ORIENTATION --xwaylandquirks" &
+            
             for i in {1..10}; do
                 [ -f /run/display/wayland-$DISTRO_PREFIX-1.lock ] && break
                 sleep 1

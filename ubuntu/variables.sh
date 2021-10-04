@@ -14,9 +14,9 @@ export SSH_PORT=2228
 export TRACE_CMD="set +x"
 export CHROOT_DIR="/.$DISTRO"
 export ENABLE_AUDIO=0 # don't use
-export SYNC_XKEYBOARD=1 # .xkeyboard_synced
-export QXCOMPOSITOR_PORTRAIT=0
-export CHROMIUM_MATCHBOX_KEYBOARD=0
+export SYNC_XKEYBOARD=1 # creates .xkeyboard_synced
+export QXCOMPOSITOR_ORIENTATION="auto"
+export CHROMIUM_ONBOARD_KEYBOARD=0
 
 print_info() {
     echo -e "\n\e[93m=== $1 ===\n\e[0m"

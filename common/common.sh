@@ -444,7 +444,7 @@ sfchroot_add_repo_and_install() {
     [[ "$yn" == [nN] ]] && exit 1
     ssu ar "$DISTRO_PREFIX"_"$1"_tmp $2/sailfishos_$CURRENT_RELEASE/armv7hl/
     pkcon refresh
-    sfchroot_pkcon install -y $1
+    sfchroot_pkcon install -y $1 || true
     ssu rr "$DISTRO_PREFIX"_"$1"_tmp
 }
 

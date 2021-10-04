@@ -27,7 +27,7 @@ If you want xfce in landscape mode then make sure you have installed latest [qxc
 ```
 If you use some rotation patch different than [sailfishos-default-allowed-orientations-patch](https://coderus.openrepos.net/pm2/project/sailfishos-default-allowed-orientations-patch) then qxcompositor will rotate incorrectly (freely).
 
-For devices with hardware keyboard you can install chromium-browser via script. Browser UI scale can be changed via CHROMIUM_SCALE in scripts/dotuburc. Limited usability for devices without hardware keyboard can be achieved with: QXCOMPOSITOR_PORTRAIT and CHROMIUM_MATCHBOX_KEYBOARD in variables.sh.
+For devices with hardware keyboard you can install chromium-browser via script. Browser UI scale can be changed via CHROMIUM_SCALE in scripts/dotuburc. Limited usability for devices without hardware keyboard can be achieved with: CHROMIUM_ONBOARD_KEYBOARD in variables.sh.
 
 ```
 ./install.sh chromium-browser
